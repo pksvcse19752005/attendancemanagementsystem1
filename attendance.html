@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Attendance Management System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            background: #fffdea;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+        }
+        .container {
+            width: 95vw;
+            max-width: 900px;
+            margin: 40px auto;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 0 20px #ece6aa88;
+            padding: 2em 1.5em;
+        }
+        h2 {
+            text-align: center;
+            color: #b09542;
+            margin-bottom: 16px;
+        }
+        label {
+            display: block;
+            margin: 12px 0 5px 8px;
+            color: #bd9600;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="password"] {
+            width: 98%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1.5px solid #f7e153;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 1em;
+            background: #fffae6;
+        }
+        .forgot {
+            text-align: right;
+            margin-bottom: 16px;
+            color: #b09542;
+            font-size: 0.95em;
+            cursor: pointer;
+        }
+        button {
+            background: #f7e153;
+            color: #fff;
+            padding: 9px 0;
+            border: none;
+            border-radius: 6px;
+            font-size: 1.13em;
+            margin-bottom: 8px;
+            transition: background 0.2s;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #b09542;
+        }
+        .hidden {
+            display: none;
+        }
+        .error {
+            color: #ce1818;
+            text-align: center;
+            margin-bottom: 12px;
+            font-size: 1em;
+        }
+        .success {
+            color: #0eaa2d;
+            text-align: center;
+            margin-bottom: 12px;
+            font-size: 1em;
+        }
+        .dashboard {
+            min-height: 600px;
+            padding: 5px 0;
+        }
+        .section-selector {
+            margin: 16px 0 16px 0;
+            text-align: center;
+        }
+        .section-selector select {
+            background: #fffbea;
+            color: #ba9500;
+            padding: 7px 15px;
+            border-radius: 6px;
+            border: 1px solid #f7e153;
+            font-size: 1.06em;
+        }
+        .attendance-table {
+            width: 100%;
+            margin: 15px 0;
+            border-collapse: collapse;
+            background: #fff;
+            font-size: 0.97em;
+        }
+        .attendance-table th, .attendance-table td {
+            padding: 8px 2px;
+            text-align: left;
+            border-bottom: 1px solid #ffeaaa;
+        }
+        .attendance-table th {
+            color: #b09542;
+            background: #fffae6;
+            font-size: 1em;
+        }
+        .attendance-table td {
+            color: #664e17;
+            background: #fff;
+        }
+        .option-btn-group {
+            display: flex;
+            gap: 7px;
+        }
+        .option-btn {
+            padding: 3px 12px;
+            border-radius: 16px;
+            border: 2.5px solid #f7e153;
+            background: #fffde0;
+            font-weight: 600;
+            color: #b09542;
+            cursor: pointer;
+            outline: none;
+            font-size: 0.95em;
+            transition: background 0.13s, color 0.13s;
+        }
+        .option-btn.selected.present {
+            background: #ffe740;
+            color: #117a1c;
+            border-color: #bfe53d;
+        }
+        .option-btn.selected.absent {
+            background: #ffd0ca;
+            color: #d91010;
+            border-color: #ff6252;
+        }
+        .option-btn.selected.permission {
+            background: #ceeaff;
+            color: #0d60ac;
+            border-color: #45b9fa;
+        }
+        .delete-btn {
+            background: #fff;
+            color: #d91010;
+            border: 2px solid #ff6252;
+            border-radius: 16px;
+            margin-left: 6px;
+            font-size: 0.93em;
+            padding: 3px 12px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .actions {
+            text-align: center;
+            margin: 30px 0 11px 0;
+        }
+        .actions input[type="date"] {
+            padding: 7px;
+            border-radius: 8px;
+            border: 2px solid #f7e153;
+            background: #fffde0;
+            font-size: 1em;
+            margin-bottom: 18px;
+            margin-top: 12px;
+        }
+        .actions button {
+            width: 45%;
+            margin: 0 6px 6px 6px;
+            font-size: 1.05em;
+            font-weight: 600;
+        }
+        @media (max-width: 540px) {
+            .container {
+                width: 99vw;
+                padding: 1em 0.3em;
+            }
+            .dashboard {
+                min-height: 420px;
+                font-size: 0.93em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="loginContainer">
+        <h2>Attendance System</h2>
+        <div id="loginError" class="error hidden"></div>
+        <label for="username">Username</label>
+        <input type="text" id="username" autocomplete="username" />
+        <label for="password">Password</label>
+        <input type="password" id="password" autocomplete="current-password" />
+        <div class="forgot" onclick="forgotPassword()">Forgot Password?</div>
+        <button onclick="doLogin()">Login</button>
+    </div>
+
+    <div class="container hidden" id="dashboardContainer">
+        <h2>Mark Attendance</h2>
+        <div id="welcome" style="text-align:center; color:#b09542; font-size:1.06em; margin-bottom:5px;">
+            Welcome, DEPTCSE!
+        </div>
+        <div class="section-selector">
+            <label for="sectionSelect" style="margin:0 0 7px 0;">Choose Section:</label>
+            <select id="sectionSelect" onchange="renderSectionStudents()">
+                <option value="A">A Section</option>
+                <option value="B">B Section</option>
+                <option value="C">C Section</option>
+                <option value="D">D Section</option>
+            </select>
+        </div>
+        <div class="actions">
+            <label for="attendanceDate" style="margin:0 0 7px 0;">Date:</label>
+            <input type="date" id="attendanceDate" />
+            <br>
+            <button onclick="saveAttendance()">Save Attendance</button>
+            <button onclick="saveAbsenteesExcel()">Save Absentees Excel</button>
+            <div id="saveMsg" class="success hidden"></div>
+        </div>
+        <table class="attendance-table" id="attendanceTable">
+            <!-- Students populated here -->
+        </table>
+    </div>
+
+    <script>
+        // Hardcoded credentials
+        const CORRECT_USERNAME = "DEPTCSE";
+        const CORRECT_PASSWORD = "pksv";
+
+        // Full students list per section (from Excel file)
+        const students = {
+            "A": [
+                {regd: "23KD1A0501", name: "ABDUL GUFFRAN"}, {regd: "23KD1A0502", name: "ADAPAKA TEJASRI"}, {regd: "23KD1A0503", name: "ADDANKI MAHESWARI"}, {regd: "23KD1A0504", name: "ALAMANDA SANJANA BLESSY"}, {regd: "23KD1A0505", name: "ALAVELLI SRIPRIYA"}, {regd: "23KD1A0506", name: "AAMUDALA RAJESH"}, {regd: "23KD1A0507", name: "APPANA PRANEETH KUMAR"},
+                {regd: "23KD1A0508", name: "BADIGANTI MANOJ"}, {regd: "23KD1A0509", name: "BAGGAM BHAVANASRI"}, {regd: "23KD1A0510", name: "BALIVADA MRUDULA"}, {regd: "23KD1A0511", name: "BANGARU VANDHANA"}, {regd: "23KD1A0512", name: "BANKI SAI MONISH"}, {regd: "23KD1A0513", name: "BATTULA SAI KUMAR"},
+                {regd: "23KD1A0514", name: "BAYYA AKHIL"}, {regd: "23KD1A0515", name: "BEVARA DEVI PRASAD"}, {regd: "23KD1A0516", name: "BHASKARA AKSHAYA KUNDANIKA"}, {regd: "23KD1A0517", name: "BHOGAPURAPU SAI MEGHANA"}, {regd: "23KD1A0518", name: "BITRA GIRIDDHAR"}, {regd: "23KD1A0519", name: "BODASINGI SIRISHA"},
+                {regd: "23KD1A0520", name: "BODDETI VYSHNAVI"}, {regd: "23KD1A0521", name: "BODDU APPALA RAJU"}, {regd: "23KD1A0522", name: "BOGADI NAGAMANI"}, {regd: "23KD1A0523", name: "BONTHU SRUTHI"}, {regd: "23KD1A0524", name: "BURADA MEGHANA"}, {regd: "23KD1A0525", name: "CHALICHAMA LOKESH SEETHARAM"},
+                {regd: "23KD1A0526", name: "CHANDAKA BHARATH KUMAR"}, {regd: "23KD1A0527", name: "CHANDAKA PAVITHRA"}, {regd: "23KD1A0528", name: "CHAPPA BHUVANA SAI"}, {regd: "23KD1A0529", name: "CHILAKALAPUDI SRIVALLI"}, {regd: "23KD1A0530", name: "CHINTALAPATI LAKSHMI"}, {regd: "23KD1A0531", name: "CHITROTHU RAHUL KRISHNA"},
+                {regd: "23KD1A0532", name: "CHOKKAPU MOHAN SATHVIK"}, {regd: "23KD1A0533", name: "CHUKKA JNANACHARAN"}, {regd: "23KD1A0534", name: "CHUKKA SAI KIRAN"}, {regd: "23KD1A0535", name: "DACHEPALLI MADHUMITHA"}, {regd: "23KD1A0537", name: "DANDU UDAY KIRAN"}, {regd: "23KD1A0538", name: "DASARI LOVA RAJU"},
+                {regd: "23KD1A0539", name: "DASARI MOHAN"}, {regd: "23KD1A0540", name: "DASARI SURESH"}, {regd: "23KD1A0541", name: "DATLA SEETHARAMARAJU"}, {regd: "23KD1A0542", name: "DATTI ANU"}, {regd: "23KD1A0543", name: "DEEPATI MOHITH"}, {regd: "23KD1A0544", name: "DEVU VENKATAVIVEK"},
+                {regd: "23KD1A0545", name: "DOKARA SURESH"}, {regd: "23KD1A0546", name: "DORA KARTHIK"}, {regd: "23KD1A0547", name: "DUMPALA SANYASIRAO"}, {regd: "23KD1A0548", name: "DUVVU TEJESWAR"}, {regd: "23KD1A0549", name: "ELURU BHANUSHANKAR"}, {regd: "23KD1A0550", name: "ESSARAPU AVINASH"},
+                {regd: "23KD1A0551", name: "ETTLA MARY AKSHITHA"}, {regd: "23KD1A0552", name: "FARHEEN MUNAVVAR FATHIMA"}, {regd: "23KD1A0553", name: "GADABANTI GANESH"}, {regd: "23KD1A0554", name: "GANDATE ROHIT KUMAR"}, {regd: "23KD1A0555", name: "GANDHULI MONIKA"}, {regd: "23KD1A0556", name: "GANDRETI GEETHA SRI"},
+                {regd: "23KD1A0557", name: "GANDUBARIKI PRAGNA"}, {regd: "23KD1A0558", name: "GARE TEJASWINI"}, {regd: "23KD1A0559", name: "GARI VENKATAMANIKANTA"}, {regd: "23KD1A0560", name: "GEDALA CHARMILA DEVI SRI"}, {regd: "23KD1A0561", name: "GEDALA DIVYA"}, {regd: "23KD1A0562", name: "GEDELA SATEESH"},
+                {regd: "23KD1A0563", name: "GOLLU ADITYA"}, {regd: "23KD1A0564", name: "GOLLU PAVAN KUMAR"}, {regd: "23KD1A0565", name: "GORLE HARITHA"}, {regd: "23KD1A0566", name: "GOTTAPU LAKSHMI CHARAN"}, {regd: "22KD1A0575", name: "KANDUKURI ABHILASH"}, {regd: "24KD5A0501", name: "BANDARU SREERAM"},
+                {regd: "24KD5A0502", name: "BAVISETTI MANOJ KUMAR"}, {regd: "24KD5A0503", name: "BENDI BHAVANI"}, {regd: "24KD5A0504", name: "BONDA SURESH"}, {regd: "24KD5A0505", name: "GOLAJANI JHANSI"}, {regd: "20KD1A05G5", name: "SIMMITI KARUNA BABU"}
+            ],
+            "B": [
+                {regd: "23KD1A0567", name: "GRANDHI MANASA"}, {regd: "23KD1A0568", name: "GUDDALA JAHNAVI"}, {regd: "23KD1A0569", name: "GUDEPU YASWANTH"}, {regd: "23KD1A0570", name: "GUDLA BHARATHI RATHNA KUMARI"}, {regd: "23KD1A0571", name: "GULAMAJJI BHARGAV"},
+                {regd: "23KD1A0572", name: "GUNANA SAILAJA"}, {regd: "23KD1A0573", name: "GUNDU PRIYANKA"}, {regd: "23KD1A0574", name: "GUNTUKU ABHISHEK SAI"}, {regd: "23KD1A0575", name: "GURRALA NAGA VARSHITHA"}, {regd: "23KD1A0576", name: "GURUGU VINAY KUMAR"},
+                {regd: "23KD1A0577", name: "HARIDASULA HARSHA VARDHAN"}, {regd: "23KD1A0578", name: "IMANDI HARISH"}, {regd: "23KD1A0579", name: "IMANDI MYTHRI"}, {regd: "23KD1A0580", name: "IMMIDISETTI SNEHITHA"}, {regd: "23KD1A0581", name: "JAMI INDUMATHI"},
+                {regd: "23KD1A0582", name: "JAMPA HARSHITHA"}, {regd: "23KD1A0583", name: "JAMPARANGI DINESH KUMAR"}, {regd: "23KD1A0584", name: "JARAJAPU DURGA PRASAD"}, {regd: "23KD1A0585", name: "JARJAPU PRASANTH"}, {regd: "23KD1A0586", name: "JUTTADA SWETHA"},
+                {regd: "23KD1A0587", name: "JYOTHSNA ARDHAHAKULA"}, {regd: "23KD1A0588", name: "KAKARLAPUDI NARASIMHA ANIRUDH VARMA"}, {regd: "23KD1A0589", name: "KALISETTI DEEPAK"}, {regd: "23KD1A0590", name: "KALISETTI HARINI"}, {regd: "23KD1A0591", name: "KALIVARAPU NAMRATHA"},
+                {regd: "23KD1A0592", name: "KALLA VENKATA HIRAN MAAVI"}, {regd: "23KD1A0593", name: "KALYAMPUDI RAVI KIRAN"}, {regd: "23KD1A0594", name: "KALYANAM GOWTHAMI"}, {regd: "23KD1A0596", name: "KANCHUPARTHI JYOTHSNA"}, {regd: "23KD1A0597", name: "KANDI ASHISH"},
+                {regd: "23KD1A0598", name: "KANURI PUJITHA"}, {regd: "23KD1A0599", name: "KARRI DIVYA RANI"}, {regd: "23KD1A05A0", name: "KARRI RAKSHITHA"}, {regd: "23KD1A05A1", name: "KARRI SATYA GOWTHAM KUMAR REDDY"}, {regd: "23KD1A05A2", name: "KASIREDDY JYOTHI SHIVANANDH"},
+                {regd: "23KD1A05A3", name: "KATTAMURI PRAVALLIKA"}, {regd: "23KD1A05A4", name: "KATTOJU ABILESH"}, {regd: "23KD1A05A5", name: "KELLA MITHIN KUMAR"}, {regd: "23KD1A05A6", name: "KILLO CHINNI PRAKASH"}, {regd: "23KD1A05A8", name: "KOLA ABHISHEK"},
+                {regd: "23KD1A05A9", name: "KOLA VARSHINI"}, {regd: "23KD1A05B0", name: "KOLAGANA POORNA CHANDRA RAO"}, {regd: "23KD1A05B1", name: "KOLLA SRAVANI"}, {regd: "23KD1A05B2", name: "KOLUSU ABHINAYA ANJALI"}, {regd: "23KD1A05B3", name: "KONADA RASHMITHA"},
+                {regd: "23KD1A05B4", name: "KONDAKA SOWMYA"}, {regd: "23KD1A05B5", name: "KONDAPU RAMI REDDY"}, {regd: "23KD1A05B6", name: "KORADA JAGADEESH"}, {regd: "23KD1A05B7", name: "KORADA NAGA DEVI"}, {regd: "23KD1A05B8", name: "KOSARA AKASH"},
+                {regd: "23KD1A05B9", name: "KOSIREDDY SAI KUMAR"}, {regd: "23KD1A05C0", name: "KOTTAKOTA KAVERI"}, {regd: "23KD1A05C1", name: "KOTYADA BHARGAVI"}, {regd: "23KD1A05C2", name: "KOTYADA MAHESH"}, {regd: "23KD1A05C3", name: "KOVVURI CHARAN KUMAR REDDY"},
+                {regd: "23KD1A05C5", name: "KOVVURU KIRANSAI"}, {regd: "23KD1A05C6", name: "KURIMINELLI POOJITHA"}, {regd: "23KD1A05C7", name: "LENKA BHARGAVI"}, {regd: "23KD1A05C8", name: "LODAGALA THARUN"}, {regd: "23KD1A05C9", name: "MADHABATHULA MANOJ KUMAR"},
+                {regd: "23KD1A05D0", name: "MAJJI BHANUSRI"}, {regd: "23KD1A05D1", name: "MAMIDI MARUTHI PRASAD"}, {regd: "23KD1A05D2", name: "NAGIREDLA SRAVANI"}, {regd: "24KD5A0506", name: "GOLLU DURGAPRASAD"}, {regd: "24KD5A0507", name: "GUNDU BALU"},
+                {regd: "24KD5A0508", name: "JAJIMOGGALA SRAVANTHI"}, {regd: "24KD5A0509", name: "KOTNANA LAHARI"}, {regd: "24KD5A0510", name: "MADDI KUMAR"}, {regd: "24KD5A0511", name: "MANDALA MAHESH NAIDU"}
+            ],
+            "C": [
+                {regd: "23KD1A05D3", name: "MAJJI BHARGAVI"}, {regd: "23KD1A05D4", name: "MAMIDI PRAVALLIKA"}, {regd: "23KD1A05D5", name: "MAMIDIPAKA VARAPRASAD"}, {regd: "23KD1A05D6", name: "MANDAVA MEGHANA"}, {regd: "23KD1A05D7", name: "MANEPALLI SWETHA"},
+                {regd: "23KD1A05D8", name: "MANTRIPRAGADA RAMA NAGA SAI ABHINAV"}, {regd: "23KD1A05D9", name: "MARADANA NAVYATHA"}, {regd: "23KD1A05E0", name: "MARADANA SINDHUJA"}, {regd: "23KD1A05E1", name: "MARKONDAPATNAYUKUNI PRANATHI"}, {regd: "23KD1A05E2", name: "MARRAPU HARSHITHA"},
+                {regd: "23KD1A05E3", name: "MARRAPU SHARMILA"}, {regd: "23KD1A05E4", name: "MATHA SAILAJA"}, {regd: "23KD1A05E5", name: "MOHAMMAD MOHSIN ALI"}, {regd: "23KD1A05E6", name: "MOHAMMED FARHEEN BEGUM"}, {regd: "23KD1A05E7", name: "MOKARA VAMSI KRISHNA"},
+                {regd: "23KD1A05E8", name: "MOYYA MADHURI"}, {regd: "23KD1A05E9", name: "MUDUNURU SARAYU SRI"}, {regd: "23KD1A05F0", name: "MUMMIDI SETTY YUVA KIRAN"}, {regd: "23KD1A05F1", name: "MUNAKALA JYOTHSNA"}, {regd: "23KD1A05F2", name: "MUPPIDI BENSON"},
+                {regd: "23KD1A05F3", name: "MURAPALA BHARAT"}, {regd: "23KD1A05F4", name: "MYLAPALLI MANOJ KUMAR"}, {regd: "23KD1A05F5", name: "NAGIREDLA DEVI"}, {regd: "23KD1A05F6", name: "NAKHIREDDI ADARSH"}, {regd: "23KD1A05F7", name: "NAKKA SUBHASH"},
+                {regd: "23KD1A05F8", name: "NAKKANA BHARATHI"}, {regd: "23KD1A05F9", name: "NAKKARAJU PRAVEEN KUMAR"}, {regd: "23KD1A05G0", name: "NALLABANDA KHYATI"}, {regd: "23KD1A05G1", name: "NAMBURI VENKATA SAI PRANATHI"}, {regd: "23KD1A05G2", name: "NAMMI NAGASRI HARICHARAN"},
+                {regd: "23KD1A05G3", name: "NANDHINI MATSA"}, {regd: "23KD1A05G4", name: "NARAMSETTY CHANIKYA"}, {regd: "23KD1A05G5", name: "NARAVA MEGHANA"}, {regd: "23KD1A05G6", name: "NARAYANASETTI SAI TEJA"}, {regd: "23KD1A05G7", name: "NARELLA DRAKSHAMANI"},
+                {regd: "23KD1A05G8", name: "NEELAM VENKATESWARI LAVANYA"}, {regd: "23KD1A05G9", name: "NUDURUPATI AISHWARYA"}, {regd: "23KD1A05H0", name: "NULAKALA GEETHA"}, {regd: "23KD1A05H1", name: "PADALA CHIDVILAS"}, {regd: "23KD1A05H2", name: "PADALA KIRAN"},
+                {regd: "23KD1A05H3", name: "PAIDI HARISHANKAR"}, {regd: "23KD1A05H4", name: "PALISETTI VENKATA SAI KIRAN"}, {regd: "23KD1A05H5", name: "PAMULAPATI VENKATA SAI POORNANANDA"}, {regd: "23KD1A05H7", name: "PARUCHURI GEETHA SRI"}, {regd: "23KD1A05H8", name: "PASALA KAVITHA"},
+                {regd: "23KD1A05I0", name: "PASAPU VINEELA"}, {regd: "23KD1A05I1", name: "PATARAPALLI BHARAT SAI SUMANTH"}, {regd: "23KD1A05I2", name: "PATTIKA GEETHANJALI"}, {regd: "23KD1A05I3", name: "PEDAPENKI DEEPIKA"}, {regd: "23KD1A05I4", name: "PENDYALA AMRUTHA"},
+                {regd: "23KD1A05I6", name: "PENUGANTI SRIVALLI"}, {regd: "23KD1A05I7", name: "PENUGONDA JAHNAVI"}, {regd: "23KD1A05I8", name: "PENUMALLU SURENDRA REDDY"}, {regd: "23KD1A05I9", name: "PENUMATSA SRAVYA"}, {regd: "23KD1A05J0", name: "PHIRADI SAHITH"},
+                {regd: "23KD1A05J1", name: "PINJARLA BHAVYA SRI"}, {regd: "23KD1A05J2", name: "PINNINTI MEENAKSHI"}, {regd: "23KD1A05J3", name: "PITTA PRIYANKA"}, {regd: "23KD1A05J4", name: "PODUGU CHITTI BABU"}, {regd: "23KD1A05J5", name: "PODUGU MYTHRI"},
+                {regd: "23KD1A05J6", name: "POLAKI JAHNAVI LATHA"}, {regd: "23KD1A05J7", name: "POLIPILLI NAVEEN KUMAR"}, {regd: "23KD1A05J8", name: "POLUPARTHI VARUDHINI"}, {regd: "24KD5A0512", name: "PISINI RENUKA"}, {regd: "24KD5A0513", name: "POTNURU NAGESWARI"},
+                {regd: "24KD5A0514", name: "PYDI VINAY"}, {regd: "24KD5A0515", name: "RAMADASU PREM KUMAR"}, {regd: "24KD5A0516", name: "SAVALAPURAPU SUJATHA"}, {regd: "24KD5A0517", name: "SETTI KUMAR RAJA"}
+            ],
+            "D": [
+                {regd: "23KD1A05J9", name: "PORAPU PADMA"}, {regd: "23KD1A05K0", name: "POTHINA APPALA DURGA GUNA MANASA SREE"}, {regd: "23KD1A05K1", name: "POTIPARTHI CHARISHMA"}, {regd: "23KD1A05K2", name: "POTIPIREDDI VANDANA"}, {regd: "23KD1A05K3", name: "POTNURU LEELA KUMARI"},
+                {regd: "23KD1A05K4", name: "PUDI SANJANA"}, {regd: "23KD1A05K5", name: "PURIJALA RAMACHANDRA RAO"}, {regd: "23KD1A05K6", name: "PUSAPATI SATWIK VARMA"}, {regd: "23KD1A05K7", name: "PUVVALA SAI BHARADWAJ"}, {regd: "23KD1A05K8", name: "PYLA SRAVYA"},
+                {regd: "23KD1A05K9", name: "RAGHUMANDA SAITEJA"}, {regd: "23KD1A05L0", name: "RAGHUMANDA SRAVANTHI"}, {regd: "23KD1A05L1", name: "RAI CHIRANJEEVI"}, {regd: "23KD1A05L2", name: "RAJANA LIKHITHA"}, {regd: "23KD1A05L3", name: "RAJANA NAVEEN"},
+                {regd: "23KD1A05L4", name: "RAPARTHI CHANDU"}, {regd: "23KD1A05L5", name: "REGETI SOWJANYA"}, {regd: "23KD1A05L6", name: "RIKKA KALYANI"}, {regd: "23KD1A05L7", name: "SAMBANA HARSHIT"}, {regd: "23KD1A05L8", name: "SANAPATHI MANJULA"},
+                {regd: "23KD1A05L9", name: "SARIKI HEMANTH"}, {regd: "23KD1A05M0", name: "SATHI CHANDRA SEKHAR MANIKANTA REDDY"}, {regd: "23KD1A05M1", name: "SATHI SASINDRA CHAITANYA REDDY"}, {regd: "23KD1A05M2", name: "SATYAVARAPU RADHA"}, {regd: "23KD1A05M3", name: "SETTY MOUNIKA TEJASWINI"},
+                {regd: "23KD1A05M4", name: "SHAIK ABEED"}, {regd: "23KD1A05M5", name: "SHEIK UMAR RAFEE"}, {regd: "23KD1A05M6", name: "SIDDA HITANSHA"}, {regd: "23KD1A05M7", name: "SIMHADRI YASASWI"}, {regd: "23KD1A05M8", name: "SINGARAPU DIVYA"},
+                {regd: "23KD1A05M9", name: "SINKA VENU SREE"}, {regd: "23KD1A05N0", name: "SIRUVURI RAMYA"}, {regd: "23KD1A05N1", name: "SRIDHARALA JASWANTH"}, {regd: "23KD1A05N2", name: "SUNKARI INDHU"}, {regd: "23KD1A05N3", name: "SUNKARI MOUNIKA"},
+                {regd: "23KD1A05N4", name: "SUNKARI VENKATA APOORVA"}, {regd: "23KD1A05N5", name: "TADANGI KARTHIK"}, {regd: "23KD1A05N6", name: "TALADA VINAY KUMAR"}, {regd: "23KD1A05N7", name: "TALLAPUDI SALMON RAJ"}, {regd: "23KD1A05N8", name: "TANAVARAPU HARSHA VARDHAN"},
+                {regd: "23KD1A05N9", name: "TELUKALA VIJAYKUMAR SAHU"}, {regd: "23KD1A05O0", name: "THAPPITA CHANDRA SEKHAR"}, {regd: "23KD1A05O1", name: "THONANGI KIRAN REDDY"}, {regd: "23KD1A05O2", name: "TIRUVEEDHULA KARTHIK"}, {regd: "23KD1A05O3", name: "TOMPALA KARTHIK"},
+                {regd: "23KD1A05O4", name: "TULA SAI NAGA VENKATA SIRI"}, {regd: "23KD1A05O5", name: "UMMIREDDY GAYATRI"}, {regd: "23KD1A05O6", name: "UPPILI HARSHAVARDHAN"}, {regd: "23KD1A05O7", name: "UTTARAVELLI NAVEEN KUMAR"}, {regd: "23KD1A05O8", name: "UYAKA SAILAJA"},
+                {regd: "23KD1A05O9", name: "VARANASI KEERTHANA"}, {regd: "23KD1A05P0", name: "VEJENDLA CHATURYA PHANI"}, {regd: "23KD1A05P1", name: "VELUVALI  NAVYA SREE"}, {regd: "23KD1A05P2", name: "VEMPADAPU SUCHITRA"}, {regd: "23KD1A05P3", name: "VEMPALI SAMPATH KUMAR"},
+                {regd: "23KD1A05P4", name: "VENDRAPU RAMYA SREE"}, {regd: "23KD1A05P5", name: "VIJINIGIRI LATHA"}, {regd: "23KD1A05P6", name: "VUDA GEETHA MADHURI"}, {regd: "23KD1A05P7", name: "YANDRAPU RAJESWARI"}, {regd: "23KD1A05P8", name: "YARABALA USHA SREE"},
+                {regd: "23KD1A05P9", name: "YAVARNA SIREESHA"}, {regd: "23KD1A05Q0", name: "YEJJALA SIRI"}, {regd: "23KD1A05Q1", name: "YENDUVA VIKRAMADITYA NAIDU"}, {regd: "23KD1A05Q2", name: "YERRAMSETTI GOVARDHINI"}, {regd: "23KD1A05Q3", name: "YERUBOTHU THANEESH KARTHEEK"},
+                {regd: "24KD5A0518", name: "SURAVARAPU DURGAPRASAD"}, {regd: "24KD5A0519", name: "TEEDA SIRISHA"}, {regd: "24KD5A0520", name: "TEJA SREE PENTYALA"}, {regd: "24KD5A0521", name: "TETAKALI LAVANYA"}, {regd: "24KD5A0522", name: "VADAVALASA INDRASENA"},
+                {regd: "24KD5A0523", name: "YENUGULA ANITHA"}, {regd: "24KD5A0524", name: "YERLAJELLA KARTHIK"}, {regd: "24KD5A0525", name: "REDDI SANDHYA"}
+            ]
+        };
+
+        let attendanceData = {};
+
+        function forgotPassword() {
+            alert("Contact administrator for resetting password.");
+        }
+
+        function doLogin() {
+            const username = document.getElementById("username").value.trim();
+            const password = document.getElementById("password").value.trim();
+            const errorDiv = document.getElementById("loginError");
+            if (username !== CORRECT_USERNAME || password !== CORRECT_PASSWORD) {
+                errorDiv.textContent = "Password is incorrect";
+                errorDiv.classList.remove("hidden");
+                return;
+            }
+            errorDiv.classList.add("hidden");
+            document.getElementById("loginContainer").classList.add("hidden");
+            document.getElementById("dashboardContainer").classList.remove("hidden");
+            document.getElementById("attendanceDate").value = getToday();
+            renderSectionStudents();
+        }
+
+        function renderSectionStudents() {
+            const section = document.getElementById("sectionSelect").value;
+            const table = document.getElementById("attendanceTable");
+            table.innerHTML = `
+                <tr>
+                    <th>S.No</th>
+                    <th>Registration No</th>
+                    <th>Name</th>
+                    <th>Attendance</th>
+                    <th>Action</th>
+                </tr>
+            `;
+            (students[section] || []).forEach((student, idx) => {
+                table.innerHTML += `
+                    <tr id="row_${student.regd}">
+                        <td>${idx + 1}</td>
+                        <td>${student.regd}</td>
+                        <td>${student.name}</td>
+                        <td>
+                            <div class="option-btn-group">
+                                <button class="option-btn present" id="present_${student.regd}" onclick="setAttendance('${section}','${student.regd}','present')">Present</button>
+                                <button class="option-btn absent" id="absent_${student.regd}" onclick="setAttendance('${section}','${student.regd}','absent')">Absent</button>
+                                <button class="option-btn permission" id="permission_${student.regd}" onclick="setAttendance('${section}','${student.regd}','permission')">Permission</button>
+                            </div>
+                        </td>
+                        <td><button class="delete-btn" onclick="deleteStudent('${section}','${student.regd}')">Delete</button></td>
+                    </tr>
+                `;
+            });
+            resetAttendanceSelections();
+        }
+
+        function getToday() {
+            const d = new Date();
+            return d.toISOString().slice(0,10);
+        }
+
+        function setAttendance(section, regd, status) {
+            const date = document.getElementById("attendanceDate").value || getToday();
+            if (!attendanceData[section]) attendanceData[section] = {};
+            if (!attendanceData[section][date]) attendanceData[section][date] = {};
+            attendanceData[section][date][regd] = status;
+
+            document.getElementById("present_" + regd).classList.remove("selected", "absent", "permission");
+            document.getElementById("absent_" + regd).classList.remove("selected", "present", "permission");
+            document.getElementById("permission_" + regd).classList.remove("selected", "present", "absent");
+
+            document.getElementById(status + "_" + regd).classList.add("selected", status);
+        }
+
+        function resetAttendanceSelections() {
+            const section = document.getElementById("sectionSelect").value;
+            const date = document.getElementById("attendanceDate").value || getToday();
+            if (!attendanceData[section] || !attendanceData[section][date]) return;
+            (students[section] || []).forEach(student => {
+                const status = attendanceData[section][date][student.regd];
+                ["present", "absent", "permission"].forEach(opt => {
+                    document.getElementById(opt + "_" + student.regd).classList.remove("selected", "present", "absent", "permission");
+                });
+                if (status) {
+                    document.getElementById(status + "_" + student.regd).classList.add("selected", status);
+                }
+            });
+        }
+
+        function saveAttendance() {
+            const section = document.getElementById("sectionSelect").value;
+            document.getElementById("saveMsg").textContent = "Attendance is saved.";
+            document.getElementById("saveMsg").classList.remove("hidden");
+            setTimeout(() => document.getElementById("saveMsg").classList.add("hidden"), 1800);
+        }
+
+        function saveAbsenteesExcel() {
+            const section = document.getElementById("sectionSelect").value;
+            const date = document.getElementById("attendanceDate").value || getToday();
+            const absentees = [];
+            (students[section] || []).forEach(student => {
+                const status = attendanceData[section] && attendanceData[section][date] ? attendanceData[section][date][student.regd] : null;
+                if (status === 'absent') {
+                    absentees.push([student.regd, student.name]);
+                }
+            });
+            let csvContent = "Registration No,Name\n";
+            absentees.forEach(row => { csvContent += `${row[0]},${row[1]}\n`; });
+
+            const blob = new Blob([csvContent], {type: "text/csv"});
+            const link = document.createElement("a");
+            link.href = window.URL.createObjectURL(blob);
+            link.download = `absentees_${section}_${date}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            setTimeout(() => document.body.removeChild(link), 200);
+        }
+
+        function deleteStudent(section, regd) {
+            let idx = students[section].findIndex(student => student.regd === regd);
+            if (idx !== -1) {
+                students[section].splice(idx, 1);
+                document.getElementById("row_" + regd).remove();
+            }
+        }
+
+        document.getElementById("attendanceDate").addEventListener("change", resetAttendanceSelections);
+        document.getElementById("sectionSelect").addEventListener("change", resetAttendanceSelections);
+
+    </script>
+</body>
+</html>
