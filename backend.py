@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_file, render_template
+    from flask import Flask, request, jsonify, send_file, render_template
 from flask_cors import CORS
 import smtplib
 from email.mime.text import MIMEText
@@ -7,7 +7,7 @@ from io import StringIO
 app = Flask(__name__)
 CORS(app)
 
-# Simple user authentication; for production, use a database
+# Simple user authentication (use a database in production!)
 users = {
     "admin": "adminpassword"
 }
@@ -15,16 +15,26 @@ users = {
 attendance_data = {}  # {date: {regno: {"name": name, "status": status}}}
 
 EMAIL_ADDRESS = "vinaypydi85@gmail.com"
-EMAIL_PASSWORD = "pxbntsohbnbojhtw"  # Use your app password securely
+EMAIL_PASSWORD = "pxbntsohbnbojhtw"  # Use an app password or env variable
 
 @app.route('/')
 def home():
     return render_template('attendance.html')
 
-@app.route('/reset-password')
+@app.route('/reset-password', methods=['GET', 'POST'])
 def reset_password():
-    # You can create a proper reset page/template if you wish!
-    return "<h2>Password Reset Page - Feature under construction.</h2>"
+    message = None
+    if request.method == 'POST':
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+        if new_password != confirm_password:
+            message = "Passwords do not match."
+        elif not new_password:
+            message = "Password cannot be empty."
+        else:
+            users['admin'] = new_password
+            message = "Password successfully reset for 'admin' user!"
+    return render_template('reset_password.html', message=message)
 
 @app.route('/api/login', methods=['POST'])
 def login():
@@ -51,7 +61,7 @@ def send_reset_email():
     msg = MIMEText('Click this link to reset your password: https://attendancemanagementsystem1-6.onrender.com/reset-password')
     msg['Subject'] = 'Password Reset Link'
     msg['From'] = EMAIL_ADDRESS
-    msg['To'] = EMAIL_ADDRESS  # Change to recipient's email when implementing actual reset
+    msg['To'] = EMAIL_ADDRESS  # For demo, send to self; for real use, send to the user
     server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
     server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
     server.send_message(msg)
