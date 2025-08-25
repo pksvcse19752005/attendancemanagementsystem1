@@ -21,6 +21,11 @@ EMAIL_PASSWORD = "pxbntsohbnbojhtw"  # Use your app password securely
 def home():
     return render_template('attendance.html')
 
+@app.route('/reset-password')
+def reset_password():
+    # You can create a proper reset page/template if you wish!
+    return "<h2>Password Reset Page - Feature under construction.</h2>"
+
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.json
@@ -90,4 +95,4 @@ def export_absentees():
 
 if __name__ == '__main__':
     app.run(port=5000, debug=True)
-  
+    
