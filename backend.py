@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_file, render_template
+    from flask import Flask, request, jsonify, send_file, render_template
 from flask_cors import CORS
 import smtplib
 from email.mime.text import MIMEText
@@ -7,15 +7,14 @@ from io import StringIO
 app = Flask(__name__)
 CORS(app)
 
-# User authentication; for production use a database
 users = {
     "admin": "adminpassword"
 }
 
-attendance_data = {}  # {date: {regno: {"name": name, "status": status}}}
+attendance_data = {}
 
 EMAIL_ADDRESS = "vinaypydi85@gmail.com"
-EMAIL_PASSWORD = "pxbntsohbnbojhtw"  # Use app password securely, use environment variable in production
+EMAIL_PASSWORD = "pxbntsohbnbojhtw"  # Use environment variables in production
 
 @app.route('/')
 def home():
@@ -58,11 +57,12 @@ def forgot_password():
     return jsonify({"success": False, "error": "Username not found"})
 
 def send_reset_email():
-    reset_link = 'https://pydi-vinay.onrender.com/reset-password'  # Replace with your deployed URL
-    msg = MIMEText(f'Click this link to reset your password: {reset_link}')
+    reset_link = 'http://localhost:5000/reset-password'  # Change to your app URL in production
+    html_content = f'<p>Click <a href="{reset_link}">here</a> to reset your password.</p>'
+    msg = MIMEText(html_content, 'html')
     msg['Subject'] = 'Password Reset Link'
     msg['From'] = EMAIL_ADDRESS
-    msg['To'] = EMAIL_ADDRESS  # Change to recipient's email for production
+    msg['To'] = EMAIL_ADDRESS  # Change to recipient email in production
     server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
     server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
     server.send_message(msg)
@@ -106,4 +106,4 @@ def export_absentees():
 
 if __name__ == '__main__':
     app.run(port=5000, debug=True)
-            
+    
