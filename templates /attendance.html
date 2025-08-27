@@ -4,36 +4,10 @@
     <meta charset="UTF-8" />
     <title>Attendance Management Login</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #f7f7f7;}
-        .container { max-width: 920px; margin: 32px auto; background: #fff; padding: 24px; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.08);}
-        .loginbox { max-width: 340px; margin: 60px auto; background: #fff; padding: 24px; border-radius: 16px;}
-        h2 { text-align: center; margin-bottom: 18px;}
-        label { margin-top:12px;}
-        input[type="text"], input[type="password"], input[type="date"] { padding:8px; margin:6px 0 10px 0; width:100%; border-radius:6px; border:1px solid #ccc;}
-        button { background: #298afb; color: white; border: none; padding: 10px 18px; border-radius: 6px; font-size: 16px; cursor: pointer; margin-bottom: 10px;}
-        button:hover { background: #2374d7;}
-        th { background: #ffe59b;}
-        tr:nth-child(even) { background: #f9f9f9;}
-        table { width: 100%; border-collapse: collapse; margin-top: 18px;}
-        th, td { padding: 8px 10px; border-bottom: 1px solid #eee; text-align: left;}
-        .status-btn { padding: 6px 18px; margin-right: 5px; border: none; border-radius: 6px; color: #fff; cursor: pointer; font-weight: bold;}
-        .present-btn { background: #90ee90; }
-        .absent-btn { background: #f7b7b7; }
-        .permission-btn { background: #f7d8b7; }
-        .active { border: 2px solid #222; box-shadow: 0 0 8px #ddd;}
-        .hidden { display:none; }
-        #dateInput { padding:6px; border-radius:6px; border:1px solid #ccc; margin-right:10px;}
-        .btn-wide { padding: 8px 20px; border-radius:6px; border:none; cursor:pointer; margin:14px 4px; }
-        #saveAllBtn { background:#4a654a; color:#fff;}
-        #downloadBtn { background:#795548; color:#fff;}
-        .error { color: #f44336;}
-        .success { color: #16c79a;}
-        .section-buttons button { margin-right: 10px; }
+        /* Add your CSS styles here for layout and colors */
     </style>
 </head>
 <body>
-
-<!-- Login Page -->
 <div id="loginbox" class="loginbox">
     <h2>Admin Login</h2>
     <div id="logmsg"></div>
@@ -46,13 +20,11 @@
     <a href="#" onclick="forgotpw();return false;" style="color:#298afb;">Forgot Password?</a>
 </div>
 
-<!-- Attendance Dashboard -->
 <div id="attendance" class="container hidden">
     <h2>Attendance Management Chart</h2>
     <div id="savemsg"></div>
     <label for="dateInput">Date:</label>
     <input type="date" id="dateInput" />
-    <!-- Save all sections button -->
     <button id="saveAllBtn" class="btn-wide">Save All Sections</button>
     <button id="downloadBtn" class="btn-wide">Download Full Attendance (Excel)</button>
     <br /><br />
@@ -164,7 +136,7 @@ const sectionStudents = {
   ]
 };
 
-let attendance = {}; // {date: {reg: status}}
+let attendance = {};
 let currentSection = 'A';
 
 function login() {
@@ -264,7 +236,7 @@ document.getElementById('saveAllBtn').onclick = function() {
 };
 
 document.getElementById('downloadBtn').onclick = function() {
-    // Directly download the full attendance Excel file for all dates
+    // Download all attendance records as Excel
     fetch('/api/export_all_attendance/')
         .then(response => {
             if (!response.ok) throw new Error("No data found");
@@ -308,5 +280,4 @@ window.onload = function() {
 };
 </script>
 </body>
-  </html>
-  
+</html>
