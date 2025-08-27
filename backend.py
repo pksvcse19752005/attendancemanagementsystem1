@@ -14,7 +14,7 @@ users = {
     "DEPTCSE": "pksv"
 }
 
-attendance_data = {}  # {date: {regno: {"name": name, "status": status, "section": section}}}
+attendance_data = {} # {date: {regno: {"name": name, "status": status, "section": section}}}
 
 EMAIL_ADDRESS = "vinaypydi85@gmail.com"
 EMAIL_PASSWORD = "pxbntsohbnbojhtw"
@@ -78,7 +78,6 @@ def check_attendance():
 
 @app.route('/api/export_all_attendance/')
 def export_all_attendance():
-    # Combine all dates/sections into a single Excel sheet
     combined_rows = []
     for date, daily_data in attendance_data.items():
         for regno, info in daily_data.items():
@@ -108,3 +107,4 @@ def export_all_attendance():
 
 if __name__ == '__main__':
     app.run(port=5000, debug=True)
+    
