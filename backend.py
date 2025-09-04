@@ -22,7 +22,7 @@ EMAIL_PASSWORD = "pxbntsohbnbojhtw"  # Use your app password securely
 
 @app.route('/')
 def home():
-    return render_template('attendance1.html')
+    return render_template('attendance1.html')  # Updated to your actual template name
 
 @app.route('/reset-password')
 def reset_password():
@@ -90,13 +90,11 @@ def export_absentees():
     if not date or date not in attendance_data:
         return "No attendance data found for this date", 404
     absentees_dict = {}
-    # Group absentees and permission by section
     for regno, info in attendance_data[date].items():
         status = info.get('status')
         section = info.get('section', 'Unknown')
         if status in ['Absent', 'Permission']:
             absentees_dict.setdefault(section, []).append([regno, info.get('name'), status])
-    # Create Excel writer with multiple sheets for each section
     output = BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         workbook = writer.book
@@ -121,43 +119,34 @@ def export_weekly_report():
     end_date = request.args.get('end_date')
     if not start_date or not end_date:
         return "Missing start_date or end_date parameters", 400
-
     try:
         start = datetime.strptime(start_date, "%Y-%m-%d").date()
         end = datetime.strptime(end_date, "%Y-%m-%d").date()
     except ValueError:
         return "Invalid date format. Use YYYY-MM-DD.", 400
-
     if start > end:
         return "start_date cannot be after end_date", 400
-
-    weekly_data = {}  # {date: {section: [[regno, name, status], ...]}}
-
+    weekly_data = {}
     date_range = [(start + timedelta(days=i)).isoformat() for i in range((end - start).days + 1)]
-
     for date in date_range:
         if date in attendance_data:
             for regno, info in attendance_data[date].items():
                 section = info.get('section', 'Unknown')
                 weekly_data.setdefault(date, {}).setdefault(section, []).append([regno, info.get('name'), info.get('status')])
-
     if not weekly_data:
         return "No attendance data found for the specified week", 404
-
     output = BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         workbook = writer.book
         header_format = workbook.add_format({'bold': True, 'font_color': 'blue', 'font_size': 14})
-
         for date in sorted(weekly_data.keys()):
             for section, rows in weekly_data[date].items():
                 sheet_name = f"{date}_Sec_{section}"
-                sheet_name = sheet_name[:31]  # Excel sheet name max length
+                sheet_name = sheet_name[:31]
                 df = pd.DataFrame(rows, columns=["Reg No", "Name", "Status"])
                 df.to_excel(writer, sheet_name=sheet_name, startrow=2, index=False)
                 worksheet = writer.sheets[sheet_name]
                 worksheet.write(0, 0, f"Attendance Date: {date} Section: {section}", header_format)
-
     output.seek(0)
     filename = f"weekly_attendance_report_{start_date}_to_{end_date}.xlsx"
     return send_file(
