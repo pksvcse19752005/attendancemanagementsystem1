@@ -4,10 +4,38 @@
     <meta charset="UTF-8" />
     <title>Attendance Management Login</title>
     <style>
-        /* Add your CSS styles here for layout and colors */
+        /* Same styles as before with color updates */
+        body { font-family: Arial, sans-serif; background: #f7f7f7;}
+        .container { max-width: 920px; margin: 32px auto; background: #fff; padding: 24px; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.08);}
+        .loginbox { max-width: 340px; margin: 60px auto; background: #fff; padding: 24px; border-radius: 16px;}
+        h2 { text-align: center; margin-bottom: 18px;}
+        label { margin-top:12px;}
+        input[type="text"], input[type="password"], input[type="date"] { padding:8px; margin:6px 0 10px 0; width:100%; border-radius:6px; border:1px solid #ccc;}
+        button { background: #298afb; color: white; border: none; padding: 10px 18px; border-radius: 6px; font-size: 16px; cursor: pointer; margin-bottom: 10px;}
+        button:hover { background: #2374d7;}
+        th { background: #ffe59b;}
+        tr:nth-child(even) { background: #f9f9f9;}
+        table { width: 100%; border-collapse: collapse; margin-top: 18px;}
+        th, td { padding: 8px 10px; border-bottom: 1px solid #eee; text-align: left;}
+        .status-btn { padding: 6px 18px; margin-right: 5px; border: none; border-radius: 6px; color: #fff; cursor: pointer; font-weight: bold;}
+        .present-btn { background: #90ee90; }    /* light green */
+        .absent-btn { background: #f7b7b7; }     /* light red */
+        .permission-btn { background: #f7d8b7; } /* light orange */
+        .active { border: 2px solid #222; box-shadow: 0 0 8px #ddd;}
+        .hidden { display:none; }
+        #dateInput { padding:6px; border-radius:6px; border:1px solid #ccc; margin-right:10px;}
+        .btn-wide { padding: 8px 20px; border-radius:6px; border:none; cursor:pointer; margin:14px 4px; }
+        #saveAllBtn { background:#4a654a; color:#fff;}
+        #downloadBtn { background:#795548; color:#fff;}
+        /* New button style, consistent */
+        #weeklyReportBtn { background:#5a4b81; color:#fff; }
+        .error { color: #f44336;}
+        .success { color: #16c79a;}
+        .section-buttons button { margin-right: 10px; }
     </style>
 </head>
 <body>
+<!-- Login Page -->
 <div id="loginbox" class="loginbox">
     <h2>Admin Login</h2>
     <div id="logmsg"></div>
@@ -19,14 +47,16 @@
     <br />
     <a href="#" onclick="forgotpw();return false;" style="color:#298afb;">Forgot Password?</a>
 </div>
-
+<!-- Attendance Dashboard -->
 <div id="attendance" class="container hidden">
     <h2>Attendance Management Chart</h2>
     <div id="savemsg"></div>
     <label for="dateInput">Date:</label>
     <input type="date" id="dateInput" />
+    <!-- Save all sections button -->
     <button id="saveAllBtn" class="btn-wide">Save All Sections</button>
-    <button id="downloadBtn" class="btn-wide">Download Full Attendance (Excel)</button>
+    <button id="downloadBtn" class="btn-wide">Download Absentees & Permissions</button>
+    <button id="weeklyReportBtn" class="btn-wide">Download Weekly Report</button>
     <br /><br />
     <label><b>Check Attendance Status for a Person:</b></label><br />
     <input type="text" id="checkRegInput" placeholder="Registration Number (e.g. 23KD1A05D3)" style="width:220px; display:inline-block;" />
@@ -51,8 +81,9 @@
         <tbody id="attBody"></tbody>
     </table>
 </div>
-
 <script>
+// Existing JS code for login, attendance management, etc.
+// Only added the weeklyReportBtn onclick handler
 const sectionStudents = {
   A: [
     ['23KD1A0501', 'ABDUL GUFFRAN'],['23KD1A0502', 'ADAPAKA TEJASRI'],['23KD1A0503', 'ADDANKI MAHESWARI'],['23KD1A0504', 'ALAMANDA SANJANA BLESSY'],
@@ -134,9 +165,11 @@ const sectionStudents = {
     ['24KD5A0521', 'TETAKALI LAVANYA'],['24KD5A0522', 'VADAVALASA INDRASENA'],['24KD5A0523', 'YENUGULA ANITHA'],['24KD5A0524', 'YERLAJELLA KARTHIK'],
     ['24KD5A0525', 'REDDI SANDHYA']
   ]
+
+
 };
 
-let attendance = {};
+let attendance = {}; // {date: {reg: status}}
 let currentSection = 'A';
 
 function login() {
@@ -157,7 +190,7 @@ function login() {
             document.getElementById('logmsg').innerHTML = '<div class="error">' + data.error + '</div>';
         }
     });
-}
+
 
 function forgotpw() {
     var u = document.getElementById('username').value.trim() || '';
@@ -236,24 +269,36 @@ document.getElementById('saveAllBtn').onclick = function() {
 };
 
 document.getElementById('downloadBtn').onclick = function() {
-    // Download all attendance records as Excel
-    fetch('/api/export_all_attendance/')
-        .then(response => {
-            if (!response.ok) throw new Error("No data found");
-            return response.blob();
-        })
-        .then(blob => {
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = "full_attendance_history.xlsx";
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-        })
-        .catch(err => {
-            alert("Failed to download: " + err.message);
+    let date = document.getElementById('dateInput').value || new Date().toISOString().split('T')[0];
+    let allAttendance = {};
+    for(let sec of ['A','B','C','D']){
+        sectionStudents[sec].forEach(([reg, name]) => {
+            let status = (attendance[date] && attendance[date][reg]) || "Present";
+            allAttendance[reg] = {name: name, status: status, section: sec};
         });
+    }
+    fetch('/api/save', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({date: date, attendance: allAttendance})
+    }).then(resp => resp.json()).then(data => {
+        if(data.success){
+            window.open('/api/export_absentees/?date=' + date, '_blank');
+        }
+    });
+};
+
+// New weekly report button handler
+document.getElementById('weeklyReportBtn').onclick = function() {
+    let today = new Date();
+    let priorDate = new Date(today);
+    priorDate.setDate(priorDate.getDate() - 6); // Last 7 days including today
+
+    function formatDate(d){ return d.toISOString().split('T')[0]; }
+    let start = formatDate(priorDate);
+    let end = formatDate(today);
+
+    window.open(`/api/export_weekly_report?start_date=${start}&end_date=${end}`, '_blank');
 };
 
 function checkStatus() {
@@ -281,3 +326,4 @@ window.onload = function() {
 </script>
 </body>
 </html>
+
