@@ -22,7 +22,7 @@ EMAIL_PASSWORD = "pxbntsohbnbojhtw"  # Use your app password securely
 
 @app.route('/')
 def home():
-    return render_template('attendance.html')
+    return render_template('attendance1.html')
 
 @app.route('/reset-password')
 def reset_password():
