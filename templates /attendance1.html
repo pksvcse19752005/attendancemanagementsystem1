@@ -27,14 +27,13 @@
         .btn-wide { padding: 8px 20px; border-radius:6px; border:none; cursor:pointer; margin:14px 4px; }
         #saveAllBtn { background:#4a654a; color:#fff;}
         #downloadBtn { background:#795548; color:#fff;}
-        /* New button style, consistent */
-        #weeklyReportBtn { background:#5a4b81; color:#fff; }
         .error { color: #f44336;}
         .success { color: #16c79a;}
         .section-buttons button { margin-right: 10px; }
     </style>
 </head>
 <body>
+
 <!-- Login Page -->
 <div id="loginbox" class="loginbox">
     <h2>Admin Login</h2>
@@ -47,6 +46,7 @@
     <br />
     <a href="#" onclick="forgotpw();return false;" style="color:#298afb;">Forgot Password?</a>
 </div>
+
 <!-- Attendance Dashboard -->
 <div id="attendance" class="container hidden">
     <h2>Attendance Management Chart</h2>
@@ -56,7 +56,6 @@
     <!-- Save all sections button -->
     <button id="saveAllBtn" class="btn-wide">Save All Sections</button>
     <button id="downloadBtn" class="btn-wide">Download Absentees & Permissions</button>
-    <button id="weeklyReportBtn" class="btn-wide">Download Weekly Report</button>
     <br /><br />
     <label><b>Check Attendance Status for a Person:</b></label><br />
     <input type="text" id="checkRegInput" placeholder="Registration Number (e.g. 23KD1A05D3)" style="width:220px; display:inline-block;" />
@@ -81,9 +80,8 @@
         <tbody id="attBody"></tbody>
     </table>
 </div>
+
 <script>
-// Existing JS code for login, attendance management, etc.
-// Only added the weeklyReportBtn onclick handler
 const sectionStudents = {
   A: [
     ['23KD1A0501', 'ABDUL GUFFRAN'],['23KD1A0502', 'ADAPAKA TEJASRI'],['23KD1A0503', 'ADDANKI MAHESWARI'],['23KD1A0504', 'ALAMANDA SANJANA BLESSY'],
@@ -165,8 +163,6 @@ const sectionStudents = {
     ['24KD5A0521', 'TETAKALI LAVANYA'],['24KD5A0522', 'VADAVALASA INDRASENA'],['24KD5A0523', 'YENUGULA ANITHA'],['24KD5A0524', 'YERLAJELLA KARTHIK'],
     ['24KD5A0525', 'REDDI SANDHYA']
   ]
-
-
 };
 
 let attendance = {}; // {date: {reg: status}}
@@ -190,7 +186,7 @@ function login() {
             document.getElementById('logmsg').innerHTML = '<div class="error">' + data.error + '</div>';
         }
     });
-
+}
 
 function forgotpw() {
     var u = document.getElementById('username').value.trim() || '';
@@ -270,6 +266,7 @@ document.getElementById('saveAllBtn').onclick = function() {
 
 document.getElementById('downloadBtn').onclick = function() {
     let date = document.getElementById('dateInput').value || new Date().toISOString().split('T')[0];
+    // Save all sections before download
     let allAttendance = {};
     for(let sec of ['A','B','C','D']){
         sectionStudents[sec].forEach(([reg, name]) => {
@@ -286,19 +283,6 @@ document.getElementById('downloadBtn').onclick = function() {
             window.open('/api/export_absentees/?date=' + date, '_blank');
         }
     });
-};
-
-// New weekly report button handler
-document.getElementById('weeklyReportBtn').onclick = function() {
-    let today = new Date();
-    let priorDate = new Date(today);
-    priorDate.setDate(priorDate.getDate() - 6); // Last 7 days including today
-
-    function formatDate(d){ return d.toISOString().split('T')[0]; }
-    let start = formatDate(priorDate);
-    let end = formatDate(today);
-
-    window.open(`/api/export_weekly_report?start_date=${start}&end_date=${end}`, '_blank');
 };
 
 function checkStatus() {
@@ -319,11 +303,4 @@ window.onload = function() {
     document.getElementById('attendance').classList.add('hidden');
     document.getElementById('loginbox').classList.remove('hidden');
     let today = new Date().toISOString().split('T')[0];
-    document.getElementById('checkDateInput').value = today;
-    document.getElementById('dateInput').value = today;
-    showSection('A');
-};
-</script>
-</body>
-</html>
-
+    document.get
