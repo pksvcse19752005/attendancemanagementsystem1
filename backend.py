@@ -11,7 +11,7 @@ app = Flask(__name__)
 CORS(app)
 
 users = {
-    "DEPTCSE": "pksv"
+    "DEPTCSE": "pksvcse"
 }
 
 attendance_data = {}  # {date: {regno: {"name": name, "status": status, "section": section}}}
