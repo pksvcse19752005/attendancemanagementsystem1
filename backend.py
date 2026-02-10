@@ -6,10 +6,9 @@ from io import BytesIO
 import random
 import string
 import pandas as pd
-
+from app import app
 app = Flask(__name__)
 CORS(app)
-
 users = {
     "DEPTCSE": "pksvcse"
 }
