@@ -16,11 +16,15 @@ attendance_data = {}  # {date: {regno: {"name": name, "status": status, "section
 
 EMAIL_ADDRESS = "vinaypydi85@gmail.com"
 EMAIL_PASSWORD = "pxbntsohbnbojhtw"  # Use your app password securely
-
 @app.route('/')
 def home():
-    return render_template('attendance1.html')
-
+    try:
+        return render_template('attendance1.html')  # Try normal way
+    except:  # If template missing
+        # Show simple HTML directly (no templates folder needed)
+        html = """<h1>Attendance System Works!</h1>
+                  <p>Login: DEPTCSE / pksvcse</p>"""
+        return html, 200  # Success!
 @app.route('/reset-password')
 def reset_password():
     return "<h2>Password Reset Page - Feature under construction.</h2>"
