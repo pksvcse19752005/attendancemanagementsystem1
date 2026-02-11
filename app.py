@@ -78,7 +78,7 @@ create_tables()
 # ======================================
 @app.route("/")
 def home():
-    return render_template("index.html")
+    return render_template("attendance1.html")
 
 
 # ======================================
