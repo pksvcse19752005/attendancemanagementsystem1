@@ -4,7 +4,8 @@ import smtplib
 from email.message import EmailMessage
 import os
 from datetime import datetime
-
+from flask import Flask, send_from_directory
+import os
 app = Flask(__name__)
 
 DB_NAME = "attendance.db"
@@ -76,9 +77,10 @@ create_tables()
 # ==========================================
 # HOME PAGE
 # ==========================================
+
 @app.route("/")
 def home():
-    return render_template("attendance1.html")
+    return send_from_directory("static", "attendance1.html")
 
 
 # ==========================================
