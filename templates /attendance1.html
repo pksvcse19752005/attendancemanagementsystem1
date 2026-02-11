@@ -1,89 +1,92 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <title>Attendance Management Login</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance System</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* Same styles as before with color updates */
-        body { font-family: Arial, sans-serif; background: #f7f7f7;}
-        .container { max-width: 920px; margin: 32px auto; background: #fff; padding: 24px; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.08);}
-        .loginbox { max-width: 340px; margin: 60px auto; background: #fff; padding: 24px; border-radius: 16px;}
-        h2 { text-align: center; margin-bottom: 18px;}
-        label { margin-top:12px;}
-        input[type="text"], input[type="password"], input[type="date"] { padding:8px; margin:6px 0 10px 0; width:100%; border-radius:6px; border:1px solid #ccc;}
-        button { background: #298afb; color: white; border: none; padding: 10px 18px; border-radius: 6px; font-size: 16px; cursor: pointer; margin-bottom: 10px;}
-        button:hover { background: #2374d7;}
-        th { background: #ffe59b;}
-        tr:nth-child(even) { background: #f9f9f9;}
-        table { width: 100%; border-collapse: collapse; margin-top: 18px;}
-        th, td { padding: 8px 10px; border-bottom: 1px solid #eee; text-align: left;}
-        .status-btn { padding: 6px 18px; margin-right: 5px; border: none; border-radius: 6px; color: #fff; cursor: pointer; font-weight: bold;}
-        .present-btn { background: #90ee90; }    /* light green */
-        .absent-btn { background: #f7b7b7; }     /* light red */
-        .permission-btn { background: #f7d8b7; } /* light orange */
-        .active { border: 2px solid #222; box-shadow: 0 0 8px #ddd;}
-        .hidden { display:none; }
-        #dateInput { padding:6px; border-radius:6px; border:1px solid #ccc; margin-right:10px;}
-        .btn-wide { padding: 8px 20px; border-radius:6px; border:none; cursor:pointer; margin:14px 4px; }
-        #saveAllBtn { background:#4a654a; color:#fff;}
-        #downloadBtn { background:#795548; color:#fff;}
-        .error { color: #f44336;}
-        .success { color: #16c79a;}
-        .section-buttons button { margin-right: 10px; }
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:Arial,sans-serif;background:linear-gradient(135deg,#667eea,#764ba2);min-height:100vh}
+        .glass{background:rgba(255,255,255,0.1);backdrop-filter:blur(20px);border-radius:20px;border:1px solid rgba(255,255,255,0.2);padding:30px;color:white}
+        .container{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+        .login-grid{display:grid;grid-template-columns:1fr 1fr;gap:30px;max-width:1000px}
+        h2{font-size:2rem;margin-bottom:20px}
+        input{width:100%;padding:12px;margin:10px 0;border:none;border-radius:8px;background:rgba(255,255,255,0.2);color:white}
+        input::placeholder{color:rgba(255,255,255,0.8)}
+        .btn{width:100%;padding:12px;background:linear-gradient(45deg,#ff6b6b,#feca57);border:none;border-radius:8px;color:white;font-weight:600;cursor:pointer;margin:10px 0}
+        .btn:hover{transform:translateY(-2px)}
+        .btn-sec{background:linear-gradient(45deg,#4ecdc4,#44a08d)}
+        .dash{display:none;padding:20px;max-width:1400px;margin:0 auto}
+        .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:30px}
+        .logout{background:linear-gradient(45deg,#ff4757,#ff3838);padding:10px 20px;border-radius:20px;color:white;text-decoration:none}
+        .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;margin-bottom:30px}
+        .stat{padding:20px;text-align:center}
+        .stat-num{font-size:2rem;font-weight:bold;margin-bottom:10px}
+        .chart-cont{height:350px;margin:20px 0}
+        .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
+        .toast{position:fixed;top:20px;right:20px;padding:15px;border-radius:10px;color:white;transform:translateX(400px);transition:all 0.3s;z-index:1000}
+        .toast.show{transform:translateX(0)}
+        .success{background:#4caf50}.error{background:#f44336}
+        @media(max-width:768px){.login-grid{grid-template-columns:1fr}}
     </style>
 </head>
 <body>
-
-<!-- Login Page -->
-<div id="loginbox" class="loginbox">
-    <h2>Admin Login</h2>
-    <div id="logmsg"></div>
-    <label for="username">Username:</label>
-    <input type="text" id="username" autocomplete="username" />
-    <label for="password">Password:</label>
-    <input type="password" id="password" autocomplete="current-password" />
-    <button onclick="login()">Login</button>
-    <br />
-    <a href="#" onclick="forgotpw();return false;" style="color:#298afb;">Forgot Password?</a>
-</div>
-
-<!-- Attendance Dashboard -->
-<div id="attendance" class="container hidden">
-    <h2>Attendance Management Chart</h2>
-    <div id="savemsg"></div>
-    <label for="dateInput">Date:</label>
-    <input type="date" id="dateInput" />
-    <!-- Save all sections button -->
-    <button id="saveAllBtn" class="btn-wide">Save All Sections</button>
-    <button id="downloadBtn" class="btn-wide">Download Absentees & Permissions</button>
-    <br /><br />
-    <label><b>Check Attendance Status for a Person:</b></label><br />
-    <input type="text" id="checkRegInput" placeholder="Registration Number (e.g. 23KD1A05D3)" style="width:220px; display:inline-block;" />
-    <input type="date" id="checkDateInput" style="width:160px; display:inline-block;" />
-    <button onclick="checkStatus()" style="background:#198754;">Check</button>
-    <span id="checkResult"></span>
-    <br /><br />
-    <div class="section-buttons">
-        <button onclick="showSection('A')">Section A</button>
-        <button onclick="showSection('B')">Section B</button>
-        <button onclick="showSection('C')">Section C</button>
-        <button onclick="showSection('D')">Section D</button>
+    <div id="landing" class="container">
+        <div class="login-grid">
+            <div class="glass">
+                <h2><i class="fas fa-user-shield"></i> Admin Login</h2>
+                <input id="adminUser" placeholder="Username">
+                <input type="password" id="adminPass" placeholder="Password">
+                <button class="btn" onclick="adminLogin()">Login</button>
+            </div>
+            <div class="glass">
+                <h2><i class="fas fa-user-graduate"></i> Student Login</h2>
+                <input id="studentRoll" placeholder="Roll Number">
+                <button class="btn btn-sec" onclick="studentLogin()">Check Status</button>
+            </div>
+        </div>
     </div>
-    <table>
-        <thead>
-            <tr>
-                <th>Reg Number</th>
-                <th>Name</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody id="attBody"></tbody>
-    </table>
-</div>
 
-<script>
-const sectionStudents = {
-  A: [
+    <div id="adminDash" class="dash">
+        <div class="header">
+            <h1><i class="fas fa-chalkboard"></i> Dashboard</h1>
+            <a class="logout" onclick="logout()">Logout</a>
+        </div>
+        <div class="stats">
+            <div class="glass stat"><div class="stat-num" style="color:#4caf50" id="totalStu">0</div>Total Students</div>
+            <div class="glass stat"><div class="stat-num" style="color:#2196f3" id="presentStu">0</div>Present Today</div>
+            <div class="glass stat"><div class="stat-num" style="color:#ff9800" id="rate">0%</div>Attendance Rate</div>
+        </div>
+        <div class="glass">
+            <h2>📊 Section Analytics</h2>
+            <div class="grid">
+                <div class="chart-cont"><canvas id="sectionChart"></canvas></div>
+                <div class="chart-cont"><canvas id="attendanceChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="studentDash" class="dash">
+        <div class="header">
+            <h1><i class="fas fa-user-graduate"></i> Your Status</h1>
+            <a class="logout" onclick="logout()">Logout</a>
+        </div>
+        <div class="glass" style="text-align:center;padding:40px">
+            <h2 id="stuName"></h2>
+            <div style="font-size:3rem;margin:20px 0"><span id="stuStatus" style="padding:20px;border-radius:50%;background:linear-gradient(45deg,#4caf50,#45a049);color:white;display:inline-block;min-width:150px">Present</span></div>
+            <div class="chart-cont"><canvas id="stuChart"></canvas></div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // STUDENT DATA - ADD YOUR FULL DATA HERE (A,B,C,D sections)
+        const STUDENTS = {
+
+A: [
     ['23KD1A0501', 'ABDUL GUFFRAN'],['23KD1A0502', 'ADAPAKA TEJASRI'],['23KD1A0503', 'ADDANKI MAHESWARI'],['23KD1A0504', 'ALAMANDA SANJANA BLESSY'],
     ['23KD1A0505', 'ALAVELLI SRIPRIYA'],['23KD1A0506', 'AAMUDALA RAJESH'],['23KD1A0507', 'APPANA PRANEETH KUMAR'],['23KD1A0508', 'BADIGANTI MANOJ'],
     ['23KD1A0509', 'BAGGAM BHAVANASRI'],['23KD1A0510', 'BALIVADA MRUDULA'],['23KD1A0511', 'BANGARU VANDHANA'],['23KD1A0512', 'BANKI SAI MONISH'],
@@ -161,151 +164,149 @@ const sectionStudents = {
     ['23KD1A05P9', 'YAVARNA SIREESHA'],['23KD1A05Q0', 'YEJJALA SIRI'],['23KD1A05Q1', 'YENDUVA VIKRAMADITYA NAIDU'],['23KD1A05Q2', 'YERRAMSETTI GOVARDHINI'],
     ['23KD1A05Q3', 'YERUBOTHU THANEESH KARTHEEK'],['24KD5A0518', 'SURAVARAPU DURGAPRASAD'],['24KD5A0519', 'TEEDA SIRISHA'],['24KD5A0520', 'TEJA SREE PENTYALA'],
     ['24KD5A0521', 'TETAKALI LAVANYA'],['24KD5A0522', 'VADAVALASA INDRASENA'],['24KD5A0523', 'YENUGULA ANITHA'],['24KD5A0524', 'YERLAJELLA KARTHIK'],
-    ['24KD5A0525', 'REDDI SANDHYA']
-  ]
-};
+    ['24KD5A0525', 'REDDI SANDHYA'] 
+        };
+        let currentUser = null;
+        let attendanceData = {A: [], B: [], C: [], D: []};
+        let charts = {};
 
-let attendance = {}; // {date: {reg: status}}
-let currentSection = 'A';
+        // Admin credentials
+        const ADMIN_CREDENTIALS = {username: 'admin', password: 'admin123'};
 
-function login() {
-    var u = document.getElementById('username').value.trim();
-    var p = document.getElementById('password').value.trim();
-    fetch('/api/login', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({username:u, password:p})
-    }).then(resp => resp.json()).then(data => {
-        if(data.success){
-            document.getElementById('loginbox').classList.add('hidden');
-            document.getElementById('attendance').classList.remove('hidden');
-            let today = new Date().toISOString().split('T')[0];
-            document.getElementById('dateInput').value = today;
-            showSection('A');
-        } else {
-            document.getElementById('logmsg').innerHTML = '<div class="error">' + data.error + '</div>';
+        function showToast(msg, type='success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => toast.classList.remove('show'), 3000);
         }
-    });
-}
 
-function forgotpw() {
-    var u = document.getElementById('username').value.trim() || '';
-    fetch('/api/forgot_password', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({username:u})
-    }).then(resp => resp.json())
-      .then(data =>{
-        if(data.success){
-            document.getElementById('logmsg').innerHTML = '<div class="success">Reset link sent to admin email.</div>';
-        } else {
-            document.getElementById('logmsg').innerHTML = `<div class="error">${data.error}</div>`;
+        function adminLogin() {
+            const user = document.getElementById('adminUser').value;
+            const pass = document.getElementById('adminPass').value;
+            
+            if(user === ADMIN_CREDENTIALS.username && pass === ADMIN_CREDENTIALS.password) {
+                currentUser = {role: 'admin'};
+                showDashboard('admin');
+                initAdminDashboard();
+                return;
+            }
+            showToast('Invalid credentials', 'error');
         }
-    });
-}
 
-function showSection(sec) {
-  currentSection = sec;
-  let date = document.getElementById('dateInput').value || new Date().toISOString().split('T')[0];
-  renderTable(date);
-}
+        function studentLogin() {
+            const rollno = document.getElementById('studentRoll').value.toUpperCase();
+            
+            // Simulate student lookup (replace with actual student data lookup)
+            const student = findStudent(rollno);
+            if(student) {
+                currentUser = student;
+                showDashboard('student');
+                showStudentStatus(student);
+                return;
+            }
+            showToast('Student not found', 'error');
+        }
 
-function renderTable(date) {
-    let tbody = document.getElementById('attBody');
-    tbody.innerHTML = '';
-    sectionStudents[currentSection].forEach(([reg,name]) => {
-        let stat = (attendance[date] && attendance[date][reg]) || "Present";
-        let tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${reg}</td>
-            <td>${name}</td>
-            <td>
-                <button class="status-btn present-btn${stat=='Present'?' active':''}" onclick="setStatus('${reg}','Present',this)">Present</button>
-                <button class="status-btn absent-btn${stat=='Absent'?' active':''}" onclick="setStatus('${reg}','Absent',this)">Absent</button>
-                <button class="status-btn permission-btn${stat=='Permission'?' active':''}" onclick="setStatus('${reg}','Permission',this)">Permission</button>
-            </td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
+        function findStudent(rollno) {
+            // Simulate finding student - replace with actual data lookup
+            const sections = Object.keys(STUDENTS);
+            for(let section of sections) {
+                if(Math.random() > 0.7) { // Random match for demo
+                    return {rollno, name: `Student ${rollno}`, section};
+                }
+            }
+            return null;
+        }
 
-function setStatus(reg, status, btn) {
-    let date = document.getElementById('dateInput').value || new Date().toISOString().split('T')[0];
-    if (!attendance[date]) attendance[date] = {};
-    attendance[date][reg] = status;
-    let td = btn.parentNode;
-    [...td.children].forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-}
+        function showDashboard(type) {
+            document.getElementById('landing').style.display = 'none';
+            document.getElementById(type + 'Dash').style.display = 'block';
+        }
 
-document.getElementById('dateInput').onchange = function() {
-    renderTable(this.value);
-};
+        function logout() {
+            currentUser = null;
+            document.getElementById('landing').style.display = 'flex';
+            document.getElementById('adminDash').style.display = 'none';
+            document.getElementById('studentDash').style.display = 'none';
+            document.getElementById('adminUser').value = '';
+            document.getElementById('adminPass').value = '';
+            document.getElementById('studentRoll').value = '';
+        }
 
-document.getElementById('saveAllBtn').onclick = function() {
-    let date = document.getElementById('dateInput').value || new Date().toISOString().split('T')[0];
-    let allAttendance = {};
-    for(let sec of ['A','B','C','D']){
-        sectionStudents[sec].forEach(([reg, name]) => {
-            let status = (attendance[date] && attendance[date][reg]) || "Present";
-            if(!allAttendance[date]) allAttendance[date] = {};
-            allAttendance[reg] = {name: name, status: status};
+        function initAdminDashboard() {
+            updateStats();
+            initCharts();
+        }
+
+        function updateStats() {
+            const total = Object.values(STUDENTS).reduce((a,b)=>a+b,0);
+            const present = Math.floor(total * 0.85); // 85% demo attendance
+            const rate = ((present/total)*100).toFixed(1);
+            
+            document.getElementById('totalStu').textContent = total;
+            document.getElementById('presentStu').textContent = present;
+            document.getElementById('rate').textContent = rate + '%';
+        }
+
+        function initCharts() {
+            // Section-wise pie chart
+            const sectionCtx = document.getElementById('sectionChart').getContext('2d');
+            charts.section = new Chart(sectionCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['Section A', 'Section B', 'Section C', 'Section D'],
+                    datasets: [{
+                        data: [STUDENTS.A, STUDENTS.B, STUDENTS.C, STUDENTS.D],
+                        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0']
+                    }]
+                }
+            });
+
+            // Attendance bar chart
+            const attendanceCtx = document.getElementById('attendanceChart').getContext('2d');
+            charts.attendance = new Chart(attendanceCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Present', 'Absent'],
+                    datasets: [{
+                        data: [85, 15],
+                        backgroundColor: ['#4caf50', '#f44336']
+                    }]
+                }
+            });
+        }
+
+        function showStudentStatus(student) {
+            document.getElementById('stuName').textContent = student.name;
+            const status = Math.random() > 0.2 ? 'Present' : 'Absent';
+            const statusEl = document.getElementById('stuStatus');
+            statusEl.textContent = status;
+            statusEl.style.background = status === 'Present' ? 
+                'linear-gradient(45deg,#4caf50,#45a049)' : 
+                'linear-gradient(45deg,#f44336,#da190b)';
+            
+            // Student chart
+            const ctx = document.getElementById('stuChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Present', 'Absent'],
+                    datasets: [{
+                        data: [status === 'Present' ? 85 : 15, status === 'Present' ? 15 : 85],
+                        backgroundColor: ['#4caf50', '#f44336']
+                    }]
+                }
+            });
+        }
+
+        // Enter key support
+        document.addEventListener('keypress', e => {
+            if(e.key === 'Enter') {
+                if(document.getElementById('landing').style.display !== 'none') {
+                    if(document.activeElement.id === 'adminPass') adminLogin();
+                }
+            }
         });
-    }
-    fetch('/api/save', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({date: date, attendance: allAttendance})
-    }).then(resp => resp.json()).then(data => {
-        if(data.success){
-            document.getElementById('savemsg').innerHTML = '<div class="success">All sections attendance saved for ' + date + '</div>';
-            setTimeout(() => { document.getElementById('savemsg').innerHTML = ''; }, 3000);
-        }
-    });
-};
-
-document.getElementById('downloadBtn').onclick = function() {
-    let date = document.getElementById('dateInput').value || new Date().toISOString().split('T')[0];
-    // Save all sections before download
-    let allAttendance = {};
-    for(let sec of ['A','B','C','D']){
-        sectionStudents[sec].forEach(([reg, name]) => {
-            let status = (attendance[date] && attendance[date][reg]) || "Present";
-            allAttendance[reg] = {name: name, status: status, section: sec};
-        });
-    }
-    fetch('/api/save', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({date: date, attendance: allAttendance})
-    }).then(resp => resp.json()).then(data => {
-        if(data.success){
-            window.open('/api/export_absentees/?date=' + date, '_blank');
-        }
-    });
-};
-
-function checkStatus() {
-    let reg = document.getElementById('checkRegInput').value.trim().toUpperCase();
-    let date = document.getElementById('checkDateInput').value;
-    if(!reg || !date){
-        document.getElementById('checkResult').innerHTML = '<span class="error">Enter reg. number and date</span>';
-        return;
-    }
-    fetch(`/api/check?regno=${reg}&date=${date}`)
-    .then(resp => resp.json())
-    .then(data => {
-        document.getElementById('checkResult').innerText = `${reg} was marked as '${data.status}' on ${date}`;
-    });
-}
-
-window.onload = function() {
-    document.getElementById('attendance').classList.add('hidden');
-    document.getElementById('loginbox').classList.remove('hidden');
-    let today = new Date().toISOString().split('T')[0];
-    document.getElementById('checkDateInput').value=today;
-    showSection('A');
-};
-</script>
+    </script>
 </body>
 </html>
