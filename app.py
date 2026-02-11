@@ -1,127 +1,164 @@
-from flask import Flask, request, jsonify, send_file, render_template
+from flask import Flask, request, jsonify, render_template, send_file
 from flask_cors import CORS
-import smtplib
-from email.mime.text import MIMEText
-from io import BytesIO
-import random
-import string
-import pandas as pd
+import sqlite3
+import csv
+from io import StringIO
+from datetime import datetime
+import os
+
 app = Flask(__name__)
 CORS(app)
-users = {
-    "DEPTCSE": "pksvcse"
-}
 
-attendance_data = {}  # {date: {regno: {"name": name, "status": status, "section": section}}}
+def init_db():
+    conn = sqlite3.connect('attendance.db')
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS students (
+        rollno TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        dept TEXT,
+        year TEXT,
+        division TEXT
+    )''')
+    c.execute('''CREATE TABLE IF NOT EXISTS attendance (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        rollno TEXT,
+        date TEXT,
+        status TEXT,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (rollno) REFERENCES students (rollno)
+    )''')
+    conn.commit()
+    conn.close()
 
-EMAIL_ADDRESS = "vinaypydi85@gmail.com"
-EMAIL_PASSWORD = "pxbntsohbnbojhtw"  # Use your app password securely
 @app.route('/')
-def home():
-    try:
-        return render_template('attendance1.html')  # Try normal way
-    except:  # If template missing
-        # Show simple HTML directly (no templates folder needed)
-        html = """<h1>Attendance System Works!</h1>
-                  <p>Login: DEPTCSE / pksvcse</p>"""
-        return html, 200  # Success!
-@app.route('/reset-password')
-def reset_password():
-    return "<h2>Password Reset Page - Feature under construction.</h2>"
+def index():
+    return render_template('index.html')
 
-@app.route('/api/login', methods=['POST'])
-def login():
+@app.route('/api/admin_login', methods=['POST'])
+def admin_login():
     data = request.json
-    username = data.get('username')
-    password = data.get('password')
-    if username in users and users[username] == password:
-        return jsonify({"success": True})
-    return jsonify({"success": False, "error": "Invalid username or password"})
+    if data.get('username') == 'admin' and data.get('password') == 'password123':
+        return jsonify({'success': True})
+    return jsonify({'success': False, 'message': 'Invalid credentials'})
 
-def generate_temp_password(length=8):
-    chars = string.ascii_letters + string.digits + string.punctuation
-    return ''.join(random.choice(chars) for _ in range(length))
+@app.route('/api/student_login', methods=['POST'])
+def student_login():
+    data = request.json
+    rollno = data.get('rollno', '').strip().upper()
+    conn = sqlite3.connect('attendance.db')
+    c = conn.cursor()
+    c.execute("SELECT rollno, name FROM students WHERE rollno = ?", (rollno,))
+    student = c.fetchone()
+    conn.close()
+    if student:
+        return jsonify({'success': True, 'rollno': student[0], 'name': student[1]})
+    return jsonify({'success': False, 'message': 'Student not found'})
+
+@app.route('/api/students')
+def get_students():
+    conn = sqlite3.connect('attendance.db')
+    c = conn.cursor()
+    c.execute("SELECT rollno, name, dept, year, division FROM students ORDER BY rollno")
+    students = [{'rollno': r[0], 'name': r[1], 'dept': r[2], 'year': r[3], 'division': r[4]} for r in c.fetchall()]
+    conn.close()
+    return jsonify(students)
+
+@app.route('/api/add_student', methods=['POST'])
+def add_student():
+    data = request.json
+    rollno = data.get('rollno', '').strip().upper()
+    name = data.get('name', '').strip()
+    dept = data.get('dept', 'CSE')
+    year = data.get('year', 'B.Tech 1st Year')
+    conn = sqlite3.connect('attendance.db')
+    c = conn.cursor()
+    try:
+        c.execute("INSERT INTO students (rollno, name, dept, year) VALUES (?, ?, ?, ?)", 
+                 (rollno, name, dept, year))
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True, 'message': f'Student {name} added successfully'})
+    except sqlite3.IntegrityError:
+        conn.close()
+        return jsonify({'success': False, 'message': 'Roll number already exists'})
+
+@app.route('/api/mark_attendance', methods=['POST'])
+def mark_attendance():
+    data = request.json
+    rollno, date, status = data['rollno'].strip().upper(), data['date'], data['status']
+    conn = sqlite3.connect('attendance.db')
+    c = conn.cursor()
+    c.execute("SELECT id FROM attendance WHERE rollno = ? AND date = ?", (rollno, date))
+    existing = c.fetchone()
+    if existing:
+        c.execute("UPDATE attendance SET status = ? WHERE rollno = ? AND date = ?", (status, rollno, date))
+        msg = f'{rollno} updated to {status}'
+    else:
+        c.execute("INSERT INTO attendance (rollno, date, status) VALUES (?, ?, ?)", (rollno, date, status))
+        msg = f'{rollno} marked as {status}'
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True, 'message': msg})
+
+@app.route('/api/attendance_status')
+def attendance_status():
+    date = request.args.get('date')
+    conn = sqlite3.connect('attendance.db')
+    c = conn.cursor()
+    c.execute("SELECT rollno, status FROM attendance WHERE date = ?", (date,))
+    statuses = [{'rollno': r[0], 'status': r[1]} for r in c.fetchall()]
+    conn.close()
+    return jsonify(statuses)
+
+@app.route('/api/today_status')
+def today_status():
+    rollno = request.args.get('rollno').strip().upper()
+    today = datetime.now().strftime('%Y-%m-%d')
+    conn = sqlite3.connect('attendance.db')
+    c = conn.cursor()
+    c.execute("SELECT status FROM attendance WHERE rollno = ? AND date = ?", (rollno, today))
+    result = c.fetchone()
+    conn.close()
+    return jsonify({'status': result[0] if result else 'Not Marked'})
+
+@app.route('/api/student_history')
+def student_history():
+    rollno = request.args.get('rollno').strip().upper()
+    conn = sqlite3.connect('attendance.db')
+    c = conn.cursor()
+    c.execute("SELECT date, status FROM attendance WHERE rollno = ? ORDER BY date DESC LIMIT 30", (rollno,))
+    history = [{'date': r[0], 'status': r[1]} for r in c.fetchall()]
+    conn.close()
+    return jsonify(history)
+
+@app.route('/api/download_csv')
+def download_csv():
+    date = request.args.get('date')
+    conn = sqlite3.connect('attendance.db')
+    c = conn.cursor()
+    c.execute("""
+        SELECT s.rollno, s.name, s.dept, s.year, COALESCE(a.status, 'Not Marked') as status
+        FROM students s LEFT JOIN attendance a ON s.rollno = a.rollno AND a.date = ?
+        ORDER BY s.rollno
+    """, (date,))
+    rows = c.fetchall()
+    conn.close()
+    si = StringIO()
+    cw = csv.writer(si)
+    cw.writerow(['Roll No', 'Name', 'Department', 'Year', f'{date} Status'])
+    cw.writerows(rows)
+    return send_file(
+        StringIO(si.getvalue()),
+        mimetype='text/csv',
+        as_attachment=True,
+        download_name=f'attendance_{date}.csv'
+    )
 
 @app.route('/api/forgot_password', methods=['POST'])
 def forgot_password():
-    data = request.json
-    username = data.get('username')
-    if username in users:
-        try:
-            temp_password = generate_temp_password()
-            users[username] = temp_password
-            send_temp_password_email(temp_password)
-            return jsonify({"success": True})
-        except Exception as e:
-            return jsonify({"success": False, "error": "Failed to send reset email"})
-    return jsonify({"success": False, "error": "Username not found"})
-
-def send_temp_password_email(temp_password):
-    msg = MIMEText(f'Your temporary password is: {temp_password}\nPlease use this password to login and change it immediately.')
-    msg['Subject'] = 'Your Temporary Password'
-    msg['From'] = EMAIL_ADDRESS
-    msg['To'] = EMAIL_ADDRESS  
-    server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
-    server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-    server.send_message(msg)
-    server.quit()
-
-@app.route('/api/save', methods=['POST'])
-def save_attendance():
-    data = request.json
-    date = data.get('date')
-    attendance = data.get('attendance')
-    if not date or not attendance:
-        return jsonify({"success": False, "error": "Date or attendance missing"})
-    attendance_data[date] = attendance
-    return jsonify({"success": True})
-
-@app.route('/api/check')
-def check_attendance():
-    regno = request.args.get('regno')
-    date = request.args.get('date')
-    if not regno or not date:
-        return jsonify({"status": "Absent"})
-    status = attendance_data.get(date, {}).get(regno, {}).get('status', "Absent")
-    return jsonify({"status": status})
-
-@app.route('/api/export_absentees/')
-def export_absentees():
-    date = request.args.get('date')
-    if not date or date not in attendance_data:
-        return "No attendance data found for this date", 404
-
-    absentees_dict = {}
-    # Group absentees and permission by section
-    for regno, info in attendance_data[date].items():
-        status = info.get('status')
-        section = info.get('section', 'Unknown')
-        if status in ['Absent', 'Permission']:
-            absentees_dict.setdefault(section, []).append([regno, info.get('name'), status])
-
-    # Create Excel writer with multiple sheets for each section
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        workbook = writer.book
-        header_format = workbook.add_format({'bold': True, 'font_color': 'blue', 'font_size': 14})
-        for section, rows in absentees_dict.items():
-            df = pd.DataFrame(rows, columns=["Reg No", "Name", "Status"])
-            df.to_excel(writer, sheet_name=f"Section {section}", startrow=2, index=False)
-
-            worksheet = writer.sheets[f"Section {section}"]
-            # Write the date header in the sheet at row 0 col 0
-            worksheet.write(0, 0, f"Attendance Date: {date}", header_format)
-
-    output.seek(0)
-
-    filename = "absentees_and_permissions.xlsx"
-    return send_file(
-        output,
-        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        as_attachment=True,
-        download_name=filename
-    )
+    return jsonify({'success': True, 'message': 'Reset link sent to your email'})
 
 if __name__ == '__main__':
-    app.run(port=5000, debug=True)
-    
+    init_db()
+    app.run(debug=True, port=5000)
+
