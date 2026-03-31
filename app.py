@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import sqlite3
 import smtplib
+import os
 from email.message import EmailMessage
 from datetime import date
 
@@ -11,7 +12,16 @@ CORS(app)
 DB_NAME = "attendance.db"
 
 # ==========================================
-# ALL STUDENT DATA
+# EMAIL CONFIG — Set these in Render Dashboard
+# Environment Variables → Add:
+#   SENDER_EMAIL = yourgmail@gmail.com
+#   SENDER_PASSWORD = your_gmail_app_password
+# ==========================================
+SENDER_EMAIL    = os.environ.get("SENDER_EMAIL", "")
+SENDER_PASSWORD = os.environ.get("SENDER_PASSWORD", "")
+
+# ==========================================
+# ALL STUDENT DATA (rollno, name, section)
 # ==========================================
 STUDENTS_DATA = [
     ('23KD1A0501','ABDUL GUFFRAN','A'),('23KD1A0502','ADAPAKA TEJASRI','A'),('23KD1A0503','ADDANKI MAHESWARI','A'),('23KD1A0504','ALAMANDA SANJANA BLESSY','A'),
@@ -92,7 +102,7 @@ STUDENTS_DATA = [
 
 
 # ==========================================
-# DATABASE CONNECTION
+# DATABASE
 # ==========================================
 def connect_db():
     conn = sqlite3.connect(DB_NAME)
@@ -100,9 +110,6 @@ def connect_db():
     return conn
 
 
-# ==========================================
-# CREATE TABLES + SEED STUDENTS
-# ==========================================
 def create_tables():
     conn = connect_db()
     cur = conn.cursor()
@@ -126,7 +133,6 @@ def create_tables():
         )
     """)
 
-    # Seed all students
     for rollno, name, section in STUDENTS_DATA:
         cur.execute(
             "INSERT OR IGNORE INTO students (rollno, name, section) VALUES (?, ?, ?)",
@@ -141,7 +147,7 @@ create_tables()
 
 
 # ==========================================
-# HOME PAGE
+# SERVE FRONTEND
 # ==========================================
 @app.route("/")
 def home():
@@ -154,13 +160,9 @@ def home():
 @app.route("/admin_login", methods=["POST"])
 def admin_login():
     data = request.json
-    username = data.get("username", "")
-    password = data.get("password", "")
-
-    if username == "admin" and password == "admin123":
-        return jsonify({"success": True, "message": "Admin Login Successful"})
-    else:
-        return jsonify({"success": False, "message": "Invalid Username or Password"})
+    if data.get("username") == "admin" and data.get("password") == "admin123":
+        return jsonify({"success": True})
+    return jsonify({"success": False, "message": "Invalid Username or Password"})
 
 
 # ==========================================
@@ -168,28 +170,20 @@ def admin_login():
 # ==========================================
 @app.route("/student_login", methods=["POST"])
 def student_login():
-    data = request.json
-    rollno = data.get("rollno", "").upper().strip()
-
+    rollno = request.json.get("rollno", "").upper().strip()
     conn = connect_db()
     cur = conn.cursor()
     cur.execute("SELECT * FROM students WHERE rollno=?", (rollno,))
-    student = cur.fetchone()
+    s = cur.fetchone()
     conn.close()
 
-    if student:
-        return jsonify({
-            "success": True,
-            "rollno": student["rollno"],
-            "name": student["name"],
-            "section": student["section"]
-        })
-    else:
-        return jsonify({"success": False, "message": "Student Not Found"})
+    if s:
+        return jsonify({"success": True, "rollno": s["rollno"], "name": s["name"], "section": s["section"]})
+    return jsonify({"success": False, "message": "Student Not Found"})
 
 
 # ==========================================
-# GET ADMIN STATS
+# GET STATS FOR ADMIN DASHBOARD
 # ==========================================
 @app.route("/get_stats", methods=["GET"])
 def get_stats():
@@ -206,48 +200,74 @@ def get_stats():
     cur.execute("SELECT COUNT(*) as cnt FROM attendance WHERE date=? AND status='Absent'", (today,))
     absent = cur.fetchone()["cnt"]
 
-    # Section counts
     section_counts = {}
     for sec in ['A', 'B', 'C', 'D']:
         cur.execute("SELECT COUNT(*) as cnt FROM students WHERE section=?", (sec,))
         section_counts[sec] = cur.fetchone()["cnt"]
 
     conn.close()
-
     rate = round((present / total) * 100, 1) if total > 0 else 0
 
     return jsonify({
-        "success": True,
-        "total": total,
-        "present": present,
-        "absent": absent,
-        "rate": rate,
-        "section_counts": section_counts
+        "success": True, "total": total, "present": present,
+        "absent": absent, "rate": rate, "section_counts": section_counts
     })
 
 
 # ==========================================
-# MARK ATTENDANCE
+# GET STUDENTS BY SECTION (for bulk marking)
 # ==========================================
-@app.route("/mark_attendance", methods=["POST"])
-def mark_attendance():
+@app.route("/get_section_students", methods=["POST"])
+def get_section_students():
     data = request.json
-    rollno = data.get("rollno", "").upper().strip()
+    section = data.get("section", "A")
     att_date = data.get("date", date.today().isoformat())
-    status = data.get("status", "Present")
 
     conn = connect_db()
     cur = conn.cursor()
 
     cur.execute("""
-        INSERT INTO attendance (rollno, date, status) VALUES (?, ?, ?)
-        ON CONFLICT(rollno, date) DO UPDATE SET status=excluded.status
-    """, (rollno, att_date, status))
+        SELECT s.rollno, s.name, s.section,
+               COALESCE(a.status, 'Not Marked') as status
+        FROM students s
+        LEFT JOIN attendance a ON s.rollno = a.rollno AND a.date = ?
+        WHERE s.section = ?
+        ORDER BY s.rollno
+    """, (att_date, section))
+
+    students = cur.fetchall()
+    conn.close()
+
+    return jsonify({
+        "success": True,
+        "students": [{"rollno": r["rollno"], "name": r["name"], "status": r["status"]} for r in students]
+    })
+
+
+# ==========================================
+# BULK MARK ATTENDANCE (entire section at once)
+# ==========================================
+@app.route("/bulk_attendance", methods=["POST"])
+def bulk_attendance():
+    data = request.json
+    records = data.get("records", [])  # [{rollno, date, status}, ...]
+
+    if not records:
+        return jsonify({"success": False, "message": "No records provided"})
+
+    conn = connect_db()
+    cur = conn.cursor()
+
+    for r in records:
+        cur.execute("""
+            INSERT INTO attendance (rollno, date, status) VALUES (?, ?, ?)
+            ON CONFLICT(rollno, date) DO UPDATE SET status=excluded.status
+        """, (r["rollno"], r["date"], r["status"]))
 
     conn.commit()
     conn.close()
 
-    return jsonify({"success": True, "message": "Attendance Marked Successfully"})
+    return jsonify({"success": True, "message": f"Attendance saved for {len(records)} students!"})
 
 
 # ==========================================
@@ -259,7 +279,7 @@ def student_attendance(rollno):
     conn = connect_db()
     cur = conn.cursor()
 
-    cur.execute("SELECT * FROM attendance WHERE rollno=? ORDER BY date DESC", (rollno,))
+    cur.execute("SELECT date, status FROM attendance WHERE rollno=? ORDER BY date DESC", (rollno,))
     records = cur.fetchall()
 
     cur.execute("SELECT COUNT(*) as cnt FROM attendance WHERE rollno=? AND status='Present'", (rollno,))
@@ -270,30 +290,11 @@ def student_attendance(rollno):
 
     conn.close()
 
-    history = [{"date": r["date"], "status": r["status"]} for r in records]
-
     return jsonify({
         "success": True,
-        "history": history,
+        "history": [{"date": r["date"], "status": r["status"]} for r in records],
         "present_count": present_count,
         "absent_count": absent_count
-    })
-
-
-# ==========================================
-# GET ALL STUDENTS
-# ==========================================
-@app.route("/get_students", methods=["GET"])
-def get_students():
-    conn = connect_db()
-    cur = conn.cursor()
-    cur.execute("SELECT rollno, name, section FROM students ORDER BY section, rollno")
-    students = cur.fetchall()
-    conn.close()
-
-    return jsonify({
-        "success": True,
-        "students": [{"rollno": s["rollno"], "name": s["name"], "section": s["section"]} for s in students]
     })
 
 
@@ -302,9 +303,7 @@ def get_students():
 # ==========================================
 @app.route("/attendance_report", methods=["POST"])
 def attendance_report():
-    data = request.json
-    att_date = data.get("date", date.today().isoformat())
-
+    att_date = request.json.get("date", date.today().isoformat())
     conn = connect_db()
     cur = conn.cursor()
 
@@ -319,53 +318,60 @@ def attendance_report():
     records = cur.fetchall()
     conn.close()
 
-    report = [{"rollno": r["rollno"], "name": r["name"], "section": r["section"], "status": r["status"]} for r in records]
-    return jsonify({"success": True, "report": report})
+    return jsonify({
+        "success": True,
+        "report": [{"rollno": r["rollno"], "name": r["name"], "section": r["section"], "status": r["status"]} for r in records]
+    })
 
 
 # ==========================================
-# FORGOT PASSWORD
+# FORGOT PASSWORD — uses Render env variables
+# On Render Dashboard → Environment → Add:
+#   SENDER_EMAIL    = yourgmail@gmail.com
+#   SENDER_PASSWORD = your_16_char_app_password
 # ==========================================
 @app.route("/forgot_password", methods=["POST"])
 def forgot_password():
-    data = request.json
-    email = data.get("email", "")
+    email = request.json.get("email", "").strip()
+    if not email:
+        return jsonify({"success": False, "message": "Email is required"})
+
+    if not SENDER_EMAIL or not SENDER_PASSWORD:
+        return jsonify({"success": False, "message": "Email not configured on server. Add SENDER_EMAIL and SENDER_PASSWORD in Render environment variables."})
 
     try:
-        send_password_email(email)
-        return jsonify({"success": True, "message": "Password sent to your email!"})
-    except Exception as e:
-        return jsonify({"success": False, "message": str(e)})
+        msg = EmailMessage()
+        msg["Subject"] = "Attendance System — Password Recovery"
+        msg["From"]    = SENDER_EMAIL
+        msg["To"]      = email
+        msg.set_content(f"""
+Hello Sir / Leader,
 
+Your Admin Login Credentials:
 
-def send_password_email(receiver_email):
-    sender_email = "yourgmail@gmail.com"       # <-- Change this
-    sender_password = "YOUR_APP_PASSWORD"       # <-- Change this (Gmail App Password)
-
-    msg = EmailMessage()
-    msg["Subject"] = "Attendance System - Password Recovery"
-    msg["From"] = sender_email
-    msg["To"] = receiver_email
-    msg.set_content("""
-Hello Sir/Leader,
-
-Your Admin Credentials:
   Username : admin
   Password : admin123
+
+Login URL  : https://your-render-app.onrender.com
 
 Thank You,
 Attendance Management System
 """)
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+            smtp.login(SENDER_EMAIL, SENDER_PASSWORD)
+            smtp.send_message(msg)
 
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-        smtp.login(sender_email, sender_password)
-        smtp.send_message(msg)
+        return jsonify({"success": True, "message": "Password sent to your Gmail!"})
+
+    except smtplib.SMTPAuthenticationError:
+        return jsonify({"success": False, "message": "Gmail auth failed. Check SENDER_EMAIL and SENDER_PASSWORD (use App Password, not Gmail password)."})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
 
 
 # ==========================================
-# RUN APP
+# RUN
 # ==========================================
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
-
 
