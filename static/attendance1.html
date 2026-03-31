@@ -1,823 +1,983 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Attendance Management System</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    *{margin:0;padding:0;box-sizing:border-box;}
 
-    body {
-      font-family: "Segoe UI", Arial, sans-serif;
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      min-height: 100vh;
-      color: white;
+    body{
+      font-family:"Segoe UI",Arial,sans-serif;
+      background:linear-gradient(135deg,#667eea,#764ba2);
+      min-height:100vh;
+      color:white;
     }
 
-    .container {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      padding: 20px;
+    /* ===== GLASS ===== */
+    .glass{
+      background:rgba(255,255,255,0.12);
+      backdrop-filter:blur(18px);
+      border-radius:20px;
+      border:1px solid rgba(255,255,255,0.22);
+      padding:30px;
+      box-shadow:0 10px 40px rgba(0,0,0,0.25);
+      transition:.3s;
+    }
+    .glass:hover{transform:translateY(-3px);}
+
+    /* ===== LANDING ===== */
+    .container{
+      display:flex;align-items:center;justify-content:center;
+      min-height:100vh;padding:20px;
+    }
+    .login-grid{
+      display:grid;grid-template-columns:1fr 1fr;
+      gap:30px;max-width:1000px;width:100%;
     }
 
-    .glass {
-      background: rgba(255,255,255,0.12);
-      backdrop-filter: blur(18px);
-      border-radius: 20px;
-      border: 1px solid rgba(255,255,255,0.22);
-      padding: 30px;
-      box-shadow: 0px 10px 40px rgba(0,0,0,0.25);
-      transition: 0.3s;
+    h2{font-size:1.9rem;margin-bottom:18px;}
+
+    input,select{
+      width:100%;padding:12px;margin:10px 0;
+      border:none;border-radius:10px;
+      background:rgba(255,255,255,0.18);
+      color:white;font-size:1rem;outline:none;
+    }
+    input::placeholder{color:rgba(255,255,255,0.8);}
+    select option{color:#333;background:#fff;}
+
+    /* ===== BUTTONS ===== */
+    .btn{
+      width:100%;padding:12px;
+      background:linear-gradient(45deg,#ff6b6b,#feca57);
+      border:none;border-radius:10px;
+      color:white;font-weight:700;cursor:pointer;
+      margin:10px 0;font-size:1rem;transition:.3s;
+    }
+    .btn:hover{transform:scale(1.03);box-shadow:0 5px 20px rgba(0,0,0,0.25);}
+    .btn:disabled{opacity:.6;cursor:not-allowed;transform:none;}
+    .btn-sec{background:linear-gradient(45deg,#4ecdc4,#44a08d);}
+    .btn-danger{background:linear-gradient(45deg,#ff4757,#ff3838);}
+    .btn-sm{
+      width:auto;padding:9px 20px;font-size:.88rem;
+      margin:4px;display:inline-block;
     }
 
-    .glass:hover { transform: translateY(-4px); }
+    .mini{font-size:.92rem;opacity:.8;margin-top:8px;}
 
-    .login-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 30px;
-      max-width: 1000px;
-      width: 100%;
+    /* ===== DASHBOARD ===== */
+    .dash{display:none;padding:20px;max-width:1500px;margin:0 auto;animation:fadeIn .5s ease;}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+
+    .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px;flex-wrap:wrap;gap:10px;}
+
+    .logout{
+      background:linear-gradient(45deg,#ff4757,#ff3838);
+      padding:10px 22px;border-radius:25px;
+      color:white;font-weight:bold;cursor:pointer;text-decoration:none;transition:.3s;
+    }
+    .logout:hover{transform:scale(1.05);}
+
+    /* ===== STATS ===== */
+    .stats{
+      display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+      gap:20px;margin-bottom:25px;
+    }
+    .stat{padding:20px;text-align:center;}
+    .stat-num{font-size:2.2rem;font-weight:bold;margin-bottom:8px;}
+
+    /* ===== CHARTS ===== */
+    .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px;margin-top:15px;}
+    .chart-cont{height:300px;padding:10px;}
+
+    /* ===== SECTION TABS ===== */
+    .section-tabs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;}
+    .tab{
+      padding:10px 24px;border-radius:25px;cursor:pointer;font-weight:700;
+      background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.3);
+      transition:.3s;font-size:.95rem;
+    }
+    .tab:hover{background:rgba(255,255,255,0.25);}
+    .tab.active{background:linear-gradient(45deg,#ff6b6b,#feca57);border-color:transparent;}
+
+    /* ===== BULK ATTENDANCE GRID ===== */
+    .bulk-controls{
+      display:flex;gap:12px;flex-wrap:wrap;
+      align-items:center;margin-bottom:18px;
+    }
+    .bulk-controls input[type=date]{
+      flex:0 0 auto;width:auto;min-width:160px;margin:0;
+    }
+    .bulk-summary{
+      background:rgba(255,255,255,0.1);
+      border-radius:12px;padding:12px 20px;
+      margin-bottom:15px;display:flex;gap:25px;flex-wrap:wrap;font-size:.95rem;
+    }
+    .bulk-summary span{font-weight:700;}
+
+    /* Student attendance grid */
+    .stu-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+      gap:10px;
+      max-height:520px;overflow-y:auto;
+      padding-right:4px;
+    }
+    .stu-card{
+      display:flex;align-items:center;gap:10px;
+      background:rgba(255,255,255,0.1);
+      border-radius:12px;padding:10px 14px;
+      border:2px solid rgba(255,255,255,0.15);
+      transition:.25s;
+    }
+    .stu-card.is-present{border-color:#4caf50;background:rgba(76,175,80,0.15);}
+    .stu-card.is-absent{border-color:#f44336;background:rgba(244,67,54,0.15);}
+
+    .stu-info{flex:1;min-width:0;}
+    .stu-info .sname{font-size:.82rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .stu-info .sroll{font-size:.72rem;opacity:.7;}
+
+    .pa-btns{display:flex;gap:6px;flex-shrink:0;}
+    .pa-btn{
+      padding:5px 12px;border:none;border-radius:8px;
+      font-size:.78rem;font-weight:700;cursor:pointer;transition:.2s;
+      opacity:.5;
+    }
+    .pa-btn:hover{opacity:.85;transform:scale(1.05);}
+    .pa-btn.active{opacity:1;}
+    .pb-p{background:#4caf50;color:white;}
+    .pb-a{background:#f44336;color:white;}
+
+    /* ===== REPORT TABLE ===== */
+    .table-wrap{overflow-x:auto;margin-top:15px;}
+    table{width:100%;border-collapse:collapse;font-size:.88rem;}
+    th,td{padding:9px 14px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.12);}
+    th{background:rgba(255,255,255,0.15);font-weight:700;}
+    tr:hover td{background:rgba(255,255,255,0.07);}
+
+    /* ===== TOAST ===== */
+    .toast{
+      position:fixed;top:20px;right:20px;padding:14px 20px;
+      border-radius:12px;color:white;
+      transform:translateX(450px);transition:all .3s ease;
+      z-index:9999;font-weight:600;
+      box-shadow:0 8px 30px rgba(0,0,0,0.25);max-width:320px;
+    }
+    .toast.show{transform:translateX(0);}
+    .t-success{background:#4caf50;}
+    .t-error{background:#f44336;}
+    .t-info{background:#2196f3;}
+
+    /* ===== STUDENT DASHBOARD ===== */
+    .stu-dash-wrap{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+    @media(max-width:768px){.stu-dash-wrap{grid-template-columns:1fr;}}
+
+    .date-badge{
+      display:inline-block;
+      background:linear-gradient(45deg,#667eea,#764ba2);
+      border:2px solid rgba(255,255,255,0.4);
+      border-radius:12px;padding:8px 20px;
+      font-size:1rem;font-weight:700;margin:8px 0 16px;
+      letter-spacing:.5px;
     }
 
-    h2 { font-size: 1.9rem; margin-bottom: 18px; }
+    .status-badge{
+      padding:18px 30px;border-radius:50px;font-weight:bold;
+      display:inline-block;min-width:200px;text-align:center;
+      box-shadow:0 6px 20px rgba(0,0,0,0.2);font-size:1.3rem;
+      margin:15px 0;
+    }
+    .badge-present{background:linear-gradient(45deg,#4caf50,#45a049);}
+    .badge-absent{background:linear-gradient(45deg,#f44336,#da190b);}
+    .badge-notmarked{background:linear-gradient(45deg,#ff9800,#f57c00);}
 
-    input {
-      width: 100%;
-      padding: 12px;
-      margin: 10px 0;
-      border: none;
-      border-radius: 10px;
-      background: rgba(255,255,255,0.18);
-      color: white;
-      font-size: 1rem;
-      outline: none;
+    .history-box{max-height:300px;overflow-y:auto;margin-top:10px;}
+    .history-item{
+      display:flex;justify-content:space-between;align-items:center;
+      padding:9px 14px;border-radius:10px;margin-bottom:7px;
+      background:rgba(255,255,255,0.1);font-size:.88rem;
+    }
+    .history-item .hdate{font-weight:700;opacity:.9;}
+    .history-item .hday{font-size:.75rem;opacity:.6;margin-top:2px;}
+    .tag-present{color:#4caf50;font-weight:bold;}
+    .tag-absent{color:#f44336;font-weight:bold;}
+    .tag-notmarked{color:#ff9800;font-weight:bold;}
+
+    .stu-stat-row{
+      display:flex;gap:15px;justify-content:center;flex-wrap:wrap;
+      margin:15px 0;
+    }
+    .stu-stat-box{
+      background:rgba(255,255,255,0.12);
+      border-radius:14px;padding:14px 24px;text-align:center;
+    }
+    .stu-stat-box .snum{font-size:2rem;font-weight:bold;}
+    .stu-stat-box .slbl{font-size:.8rem;opacity:.8;margin-top:4px;}
+
+    /* ===== MODAL ===== */
+    .modal-overlay{
+      display:none;position:fixed;inset:0;
+      background:rgba(0,0,0,0.55);z-index:9990;
+      align-items:center;justify-content:center;
+    }
+    .modal-overlay.show{display:flex;}
+    .modal-box{
+      background:linear-gradient(135deg,#5c6bc0,#7b1fa2);
+      border-radius:20px;padding:35px;width:100%;max-width:430px;
+      border:1px solid rgba(255,255,255,0.3);
+      box-shadow:0 20px 60px rgba(0,0,0,0.45);
+    }
+    .modal-box h3{margin-bottom:12px;font-size:1.4rem;}
+    .modal-note{
+      background:rgba(255,255,255,0.12);
+      border-radius:10px;padding:12px 16px;
+      font-size:.85rem;margin-bottom:12px;line-height:1.6;
     }
 
-    input::placeholder { color: rgba(255,255,255,0.8); }
-
-    .btn {
-      width: 100%;
-      padding: 12px;
-      background: linear-gradient(45deg, #ff6b6b, #feca57);
-      border: none;
-      border-radius: 10px;
-      color: white;
-      font-weight: 700;
-      cursor: pointer;
-      margin: 10px 0;
-      font-size: 1rem;
-      transition: 0.3s;
-    }
-
-    .btn:hover { transform: scale(1.03); box-shadow: 0px 5px 20px rgba(0,0,0,0.25); }
-    .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-
-    .btn-sec { background: linear-gradient(45deg, #4ecdc4, #44a08d); }
-    .btn-danger { background: linear-gradient(45deg, #ff4757, #ff3838); }
-    .btn-sm {
-      width: auto;
-      padding: 8px 18px;
-      font-size: 0.88rem;
-      margin: 4px;
-    }
-
-    .dash {
-      display: none;
-      padding: 20px;
-      max-width: 1400px;
-      margin: 0 auto;
-      animation: fadeIn 0.5s ease;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to   { opacity: 1; transform: translateY(0px); }
-    }
-
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 25px;
-    }
-
-    .logout {
-      background: linear-gradient(45deg, #ff4757, #ff3838);
-      padding: 10px 22px;
-      border-radius: 25px;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-      text-decoration: none;
-      transition: 0.3s;
-    }
-
-    .logout:hover { transform: scale(1.05); }
-
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 20px;
-      margin-bottom: 25px;
-    }
-
-    .stat { padding: 20px; text-align: center; }
-
-    .stat-num {
-      font-size: 2.2rem;
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-      gap: 20px;
-      margin-top: 15px;
-    }
-
-    .chart-cont { height: 320px; padding: 10px; }
-
-    /* ---- MARK ATTENDANCE PANEL ---- */
-    .mark-panel { margin-top: 25px; }
-
-    .mark-panel .inputs-row {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: flex-end;
-      margin-top: 12px;
-    }
-
-    .mark-panel input, .mark-panel select {
-      flex: 1;
-      min-width: 160px;
-      margin: 0;
-      background: rgba(255,255,255,0.18);
-      color: white;
-      border: none;
-      border-radius: 10px;
-      padding: 12px;
-      font-size: 1rem;
-      outline: none;
-    }
-
-    .mark-panel select option { color: #333; background: #fff; }
-
-    /* ---- REPORT TABLE ---- */
-    .table-wrap { overflow-x: auto; margin-top: 15px; }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.9rem;
-    }
-
-    th, td {
-      padding: 10px 14px;
-      text-align: left;
-      border-bottom: 1px solid rgba(255,255,255,0.15);
-    }
-
-    th { background: rgba(255,255,255,0.15); font-weight: 700; }
-    tr:hover td { background: rgba(255,255,255,0.08); }
-
-    /* ---- TOAST ---- */
-    .toast {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      padding: 15px 20px;
-      border-radius: 12px;
-      color: white;
-      transform: translateX(450px);
-      transition: all 0.3s ease;
-      z-index: 9999;
-      font-weight: 600;
-      box-shadow: 0px 8px 30px rgba(0,0,0,0.25);
-    }
-
-    .toast.show { transform: translateX(0); }
-    .success { background: #4caf50; }
-    .error   { background: #f44336; }
-    .info    { background: #2196f3; }
-
-    /* ---- STUDENT STATUS ---- */
-    .student-status { font-size: 3rem; margin: 20px 0; }
-
-    .badge {
-      padding: 18px 30px;
-      border-radius: 50px;
-      font-weight: bold;
-      display: inline-block;
-      min-width: 200px;
-      text-align: center;
-      box-shadow: 0px 6px 20px rgba(0,0,0,0.2);
-      font-size: 1.3rem;
-    }
-
-    .present { background: linear-gradient(45deg, #4caf50, #45a049); }
-    .absent  { background: linear-gradient(45deg, #f44336, #da190b); }
-    .not-marked { background: linear-gradient(45deg, #ff9800, #f57c00); }
-
-    .mini { font-size: 0.95rem; opacity: 0.85; margin-top: 8px; }
-
-    /* ---- MODAL ---- */
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.5);
-      z-index: 9998;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .modal-overlay.show { display: flex; }
-
-    .modal-box {
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      border-radius: 20px;
-      padding: 35px;
-      width: 100%;
-      max-width: 420px;
-      border: 1px solid rgba(255,255,255,0.3);
-      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-    }
-
-    .modal-box h3 { margin-bottom: 15px; font-size: 1.4rem; }
-
-    /* ---- HISTORY LIST ---- */
-    .history-list { max-height: 220px; overflow-y: auto; margin-top: 10px; }
-
-    .history-item {
-      display: flex;
-      justify-content: space-between;
-      padding: 8px 12px;
-      border-radius: 8px;
-      margin-bottom: 6px;
-      background: rgba(255,255,255,0.1);
-      font-size: 0.9rem;
-    }
-
-    .tag-present { color: #4caf50; font-weight: bold; }
-    .tag-absent  { color: #f44336; font-weight: bold; }
-
-    @media(max-width: 768px) {
-      .login-grid { grid-template-columns: 1fr; }
-    }
+    @media(max-width:768px){.login-grid{grid-template-columns:1fr;}}
   </style>
 </head>
 <body>
 
-  <!-- ============ LANDING PAGE ============ -->
-  <div id="landing" class="container">
-    <div class="login-grid">
+<!-- ========== LANDING ========== -->
+<div id="landing" class="container">
+  <div class="login-grid">
 
-      <!-- ADMIN LOGIN -->
-      <div class="glass">
-        <h2><i class="fas fa-user-shield"></i> Sir / Leader Login</h2>
-        <input id="adminUser" placeholder="Enter Username" />
-        <input type="password" id="adminPass" placeholder="Enter Password" />
-        <button class="btn" id="btnAdminLogin" onclick="adminLogin()">
-          <i class="fas fa-right-to-bracket"></i> Login
-        </button>
-        <button class="btn btn-danger" onclick="openForgotModal()">
-          <i class="fas fa-key"></i> Forgot Password
-        </button>
-        <p class="mini">Default: admin / admin123</p>
-      </div>
-
-      <!-- STUDENT LOGIN -->
-      <div class="glass">
-        <h2><i class="fas fa-user-graduate"></i> Student Login</h2>
-        <input id="studentRoll" placeholder="Enter Roll Number" />
-        <button class="btn btn-sec" id="btnStudentLogin" onclick="studentLogin()">
-          <i class="fas fa-magnifying-glass"></i> Check Attendance
-        </button>
-        <p class="mini">Enter your roll number to check present / absent.</p>
-      </div>
-
-    </div>
-  </div>
-
-
-  <!-- ============ ADMIN DASHBOARD ============ -->
-  <div id="adminDash" class="dash">
-
-    <div class="header">
-      <h1><i class="fas fa-chalkboard"></i> Admin Dashboard</h1>
-      <a class="logout" onclick="logout()"><i class="fas fa-power-off"></i> Logout</a>
-    </div>
-
-    <!-- Stats -->
-    <div class="stats">
-      <div class="glass stat">
-        <div class="stat-num" style="color:#4caf50" id="totalStu">—</div>
-        Total Students
-      </div>
-      <div class="glass stat">
-        <div class="stat-num" style="color:#2196f3" id="presentStu">—</div>
-        Present Today
-      </div>
-      <div class="glass stat">
-        <div class="stat-num" style="color:#ff9800" id="rate">—</div>
-        Attendance Rate
-      </div>
-      <div class="glass stat">
-        <div class="stat-num" style="color:#ffeb3b" id="absentStu">—</div>
-        Absent Today
-      </div>
-    </div>
-
-    <!-- Charts -->
     <div class="glass">
-      <h2>📊 Analytics & Section Report</h2>
-      <div class="grid">
-        <div class="chart-cont"><canvas id="sectionChart"></canvas></div>
-        <div class="chart-cont"><canvas id="attendanceChart"></canvas></div>
-      </div>
-    </div>
-
-    <!-- Mark Attendance -->
-    <div class="glass mark-panel" style="margin-top:25px;">
-      <h2>✅ Mark Attendance</h2>
-      <div class="inputs-row">
-        <input id="markRoll" placeholder="Roll Number" />
-        <input type="date" id="markDate" />
-        <select id="markStatus">
-          <option value="Present">Present</option>
-          <option value="Absent">Absent</option>
-        </select>
-        <button class="btn btn-sec btn-sm" onclick="markAttendance()" style="flex:0;white-space:nowrap;">
-          <i class="fas fa-check"></i> Mark
-        </button>
-      </div>
-    </div>
-
-    <!-- Attendance Report -->
-    <div class="glass" style="margin-top:25px;">
-      <h2>📋 Attendance Report by Date</h2>
-      <div class="inputs-row" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
-        <input type="date" id="reportDate" style="flex:1;min-width:160px;background:rgba(255,255,255,0.18);color:white;border:none;border-radius:10px;padding:12px;font-size:1rem;outline:none;" />
-        <button class="btn btn-sm" onclick="loadReport()" style="flex:0;white-space:nowrap;margin:0;">
-          <i class="fas fa-search"></i> Get Report
-        </button>
-      </div>
-      <div class="table-wrap" id="reportTable"></div>
-    </div>
-
-  </div>
-
-
-  <!-- ============ STUDENT DASHBOARD ============ -->
-  <div id="studentDash" class="dash">
-
-    <div class="header">
-      <h1><i class="fas fa-user-graduate"></i> Student Attendance</h1>
-      <a class="logout" onclick="logout()"><i class="fas fa-power-off"></i> Logout</a>
-    </div>
-
-    <div class="glass" style="text-align:center;padding:40px;">
-      <h2 id="stuName">Student Name</h2>
-      <p class="mini" id="stuRoll"></p>
-      <p class="mini" id="stuSection"></p>
-
-      <div class="student-status">
-        <span id="stuStatus" class="badge present">—</span>
-      </div>
-
-      <div id="stuStats" style="margin:15px 0;font-size:1.1rem;"></div>
-
-      <div class="chart-cont">
-        <canvas id="stuChart"></canvas>
-      </div>
-
-      <div class="history-list" id="historyList"></div>
-    </div>
-
-  </div>
-
-
-  <!-- ============ FORGOT PASSWORD MODAL ============ -->
-  <div id="forgotModal" class="modal-overlay">
-    <div class="modal-box">
-      <h3><i class="fas fa-key"></i> Forgot Password</h3>
-      <p class="mini" style="margin-bottom:15px;">Enter your email to receive your password.</p>
-      <input id="forgotEmail" placeholder="Enter your Gmail address" type="email" />
-      <button class="btn" onclick="sendForgotPassword()">
-        <i class="fas fa-paper-plane"></i> Send Password
+      <h2><i class="fas fa-user-shield"></i> Sir / Leader Login</h2>
+      <input id="adminUser" placeholder="Enter Username"/>
+      <input type="password" id="adminPass" placeholder="Enter Password"/>
+      <button class="btn" id="btnAdminLogin" onclick="adminLogin()">
+        <i class="fas fa-right-to-bracket"></i> Login
       </button>
-      <button class="btn btn-danger" onclick="closeForgotModal()">
-        <i class="fas fa-times"></i> Cancel
+      <button class="btn btn-danger" onclick="openForgotModal()">
+        <i class="fas fa-key"></i> Forgot Password
       </button>
+      <p class="mini">Default: admin / admin123</p>
+    </div>
+
+    <div class="glass">
+      <h2><i class="fas fa-user-graduate"></i> Student Login</h2>
+      <input id="studentRoll" placeholder="Enter Roll Number"/>
+      <button class="btn btn-sec" id="btnStudentLogin" onclick="studentLogin()">
+        <i class="fas fa-magnifying-glass"></i> Check My Attendance
+      </button>
+      <p class="mini">Enter your roll number to check your attendance status.</p>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ========== ADMIN DASHBOARD ========== -->
+<div id="adminDash" class="dash">
+
+  <div class="header">
+    <h1><i class="fas fa-chalkboard-teacher"></i> Admin Dashboard</h1>
+    <a class="logout" onclick="logout()"><i class="fas fa-power-off"></i> Logout</a>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="glass stat">
+      <div class="stat-num" style="color:#4caf50" id="totalStu">—</div>
+      Total Students
+    </div>
+    <div class="glass stat">
+      <div class="stat-num" style="color:#2196f3" id="presentStu">—</div>
+      Present Today
+    </div>
+    <div class="glass stat">
+      <div class="stat-num" style="color:#ff9800" id="rate">—</div>
+      Attendance Rate
+    </div>
+    <div class="glass stat">
+      <div class="stat-num" style="color:#f44336" id="absentStu">—</div>
+      Absent Today
     </div>
   </div>
 
+  <!-- Charts -->
+  <div class="glass">
+    <h2>📊 Analytics</h2>
+    <div class="grid2">
+      <div class="chart-cont"><canvas id="sectionChart"></canvas></div>
+      <div class="chart-cont"><canvas id="attendanceChart"></canvas></div>
+    </div>
+  </div>
 
-  <!-- ============ TOAST ============ -->
-  <div id="toast" class="toast"></div>
+  <!-- ===== BULK ATTENDANCE ===== -->
+  <div class="glass" style="margin-top:25px;">
+    <h2>✅ Mark Bulk Attendance</h2>
+    <p class="mini" style="margin-bottom:15px;">Select a section and date → click Present/Absent per student → Submit All at once.</p>
+
+    <div class="bulk-controls">
+      <div class="section-tabs">
+        <div class="tab active" onclick="selectSection('A',this)">Section A</div>
+        <div class="tab" onclick="selectSection('B',this)">Section B</div>
+        <div class="tab" onclick="selectSection('C',this)">Section C</div>
+        <div class="tab" onclick="selectSection('D',this)">Section D</div>
+      </div>
+      <input type="date" id="bulkDate" style="width:auto;min-width:160px;margin:0;flex:0 0 auto;"/>
+    </div>
+
+    <div class="bulk-controls" style="margin-bottom:12px;">
+      <button class="btn btn-sec btn-sm" onclick="markAllPresent()">
+        <i class="fas fa-check-double"></i> All Present
+      </button>
+      <button class="btn btn-danger btn-sm" onclick="markAllAbsent()">
+        <i class="fas fa-times"></i> All Absent
+      </button>
+      <button class="btn btn-sm" onclick="loadSectionStudents()" style="background:linear-gradient(45deg,#a29bfe,#6c5ce7);">
+        <i class="fas fa-rotate"></i> Reload
+      </button>
+    </div>
+
+    <div class="bulk-summary" id="bulkSummary" style="display:none;">
+      <span>Total: <span id="sumTotal" style="color:#feca57;">0</span></span>
+      <span>✅ Present: <span id="sumPresent" style="color:#4caf50;">0</span></span>
+      <span>❌ Absent: <span id="sumAbsent" style="color:#f44336;">0</span></span>
+      <span>⬜ Unmarked: <span id="sumUnmarked" style="color:#ff9800;">0</span></span>
+    </div>
+
+    <div class="stu-grid" id="stuGrid">
+      <p style="opacity:.6;padding:20px;">Loading students...</p>
+    </div>
+
+    <button class="btn btn-sec" style="margin-top:18px;" onclick="submitBulkAttendance()" id="btnSubmit">
+      <i class="fas fa-paper-plane"></i> Submit Attendance for All Marked Students
+    </button>
+  </div>
+
+  <!-- Report -->
+  <div class="glass" style="margin-top:25px;">
+    <h2>📋 Attendance Report by Date</h2>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;align-items:center;">
+      <input type="date" id="reportDate" style="flex:0 0 auto;width:auto;min-width:160px;margin:0;"/>
+      <button class="btn btn-sm" onclick="loadReport()" style="margin:0;">
+        <i class="fas fa-search"></i> Get Report
+      </button>
+    </div>
+    <div class="table-wrap" id="reportTable"></div>
+  </div>
+
+</div>
 
 
-  <script>
-    // =============================================
-    // CONFIG — change if Flask runs on diff port
-    // =============================================
-    const API = "";   // empty = same origin (Flask serves this file)
+<!-- ========== STUDENT DASHBOARD ========== -->
+<div id="studentDash" class="dash">
 
-    let charts = {};
+  <div class="header">
+    <h1><i class="fas fa-user-graduate"></i> My Attendance</h1>
+    <a class="logout" onclick="logout()"><i class="fas fa-power-off"></i> Logout</a>
+  </div>
 
-    // =============================================
-    // TOAST
-    // =============================================
-    function showToast(msg, type = "success") {
-      const t = document.getElementById("toast");
-      t.textContent = msg;
-      t.className = `toast ${type} show`;
-      setTimeout(() => t.classList.remove("show"), 3000);
-    }
+  <div class="glass" style="text-align:center;padding:35px 30px;">
+    <h2 id="stuName" style="font-size:1.8rem;">—</h2>
+    <p class="mini" id="stuRoll" style="font-size:1rem;margin-top:4px;"></p>
+    <p class="mini" id="stuSection" style="font-size:.95rem;"></p>
 
-    // =============================================
-    // HELPERS
-    // =============================================
-    function setLoading(btnId, loading) {
-      const b = document.getElementById(btnId);
-      if (!b) return;
-      b.disabled = loading;
-      b.innerHTML = loading
-        ? '<i class="fas fa-spinner fa-spin"></i> Please wait...'
-        : b.dataset.orig;
-    }
+    <!-- Today's date prominently shown -->
+    <div style="margin:12px 0;">
+      <span class="date-badge">
+        <i class="fas fa-calendar-day"></i> Checked on: <span id="checkedDate">—</span>
+      </span>
+    </div>
 
-    function showDashboard(type) {
-      document.getElementById("landing").style.display    = "none";
-      document.getElementById("adminDash").style.display  = "none";
-      document.getElementById("studentDash").style.display = "none";
-      if (type === "admin")   document.getElementById("adminDash").style.display   = "block";
-      if (type === "student") document.getElementById("studentDash").style.display = "block";
-    }
+    <!-- Today's status -->
+    <div>
+      <div style="font-size:.9rem;opacity:.75;margin-bottom:6px;">TODAY'S STATUS</div>
+      <span id="stuTodayStatus" class="status-badge badge-notmarked">—</span>
+    </div>
 
-    function logout() {
-      document.getElementById("landing").style.display = "flex";
-      document.getElementById("adminDash").style.display  = "none";
-      document.getElementById("studentDash").style.display = "none";
-      document.getElementById("adminUser").value   = "";
-      document.getElementById("adminPass").value   = "";
-      document.getElementById("studentRoll").value = "";
-      showToast("Logged Out Successfully!", "info");
-    }
+    <!-- Stats row -->
+    <div class="stu-stat-row" id="stuStatRow" style="display:none;">
+      <div class="stu-stat-box">
+        <div class="snum" style="color:#4caf50;" id="statPresent">0</div>
+        <div class="slbl">Days Present</div>
+      </div>
+      <div class="stu-stat-box">
+        <div class="snum" style="color:#f44336;" id="statAbsent">0</div>
+        <div class="slbl">Days Absent</div>
+      </div>
+      <div class="stu-stat-box">
+        <div class="snum" style="color:#feca57;" id="statPct">0%</div>
+        <div class="slbl">Attendance %</div>
+      </div>
+    </div>
+  </div>
 
-    // =============================================
-    // ADMIN LOGIN
-    // =============================================
-    async function adminLogin() {
-      const username = document.getElementById("adminUser").value.trim();
-      const password = document.getElementById("adminPass").value.trim();
+  <!-- Chart + History -->
+  <div class="stu-dash-wrap" style="margin-top:20px;">
 
-      if (!username || !password) { showToast("Enter Username & Password!", "error"); return; }
+    <div class="glass" style="text-align:center;">
+      <h2 style="font-size:1.3rem;margin-bottom:10px;">📊 Overall Chart</h2>
+      <div style="height:260px;"><canvas id="stuChart"></canvas></div>
+      <p class="mini" id="noChartMsg" style="display:none;margin-top:10px;">No attendance data yet.</p>
+    </div>
 
-      document.getElementById("btnAdminLogin").disabled = true;
-      document.getElementById("btnAdminLogin").innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+    <div class="glass">
+      <h2 style="font-size:1.3rem;margin-bottom:10px;">📅 Attendance History</h2>
+      <div class="history-box" id="historyList">
+        <p style="opacity:.6;">Loading...</p>
+      </div>
+    </div>
 
-      try {
-        const res = await fetch(API + "/admin_login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username, password })
-        });
-        const data = await res.json();
+  </div>
 
-        if (data.success) {
-          showToast("Admin Login Successful!", "success");
-          showDashboard("admin");
-          initAdminDashboard();
-        } else {
-          showToast(data.message || "Invalid credentials!", "error");
-        }
-      } catch (err) {
-        showToast("Cannot reach server! Is Flask running?", "error");
-      } finally {
-        document.getElementById("btnAdminLogin").disabled = false;
-        document.getElementById("btnAdminLogin").innerHTML = '<i class="fas fa-right-to-bracket"></i> Login';
-      }
-    }
+</div>
 
-    // =============================================
-    // STUDENT LOGIN
-    // =============================================
-    async function studentLogin() {
-      const rollno = document.getElementById("studentRoll").value.trim().toUpperCase();
 
-      if (!rollno) { showToast("Enter Roll Number!", "error"); return; }
+<!-- ========== FORGOT PASSWORD MODAL ========== -->
+<div id="forgotModal" class="modal-overlay">
+  <div class="modal-box">
+    <h3><i class="fas fa-key"></i> Forgot Password</h3>
+    <div class="modal-note">
+      <b>📌 Render Setup Required:</b><br>
+      Go to <b>Render Dashboard → Environment</b> and add:<br>
+      &nbsp;&nbsp;• <code>SENDER_EMAIL</code> = your Gmail<br>
+      &nbsp;&nbsp;• <code>SENDER_PASSWORD</code> = Gmail App Password
+    </div>
+    <input id="forgotEmail" type="email" placeholder="Enter your Gmail address"/>
+    <button class="btn" onclick="sendForgotPassword()">
+      <i class="fas fa-paper-plane"></i> Send Password to Gmail
+    </button>
+    <button class="btn btn-danger" onclick="closeForgotModal()" style="margin-top:4px;">
+      <i class="fas fa-times"></i> Cancel
+    </button>
+  </div>
+</div>
 
-      document.getElementById("btnStudentLogin").disabled = true;
-      document.getElementById("btnStudentLogin").innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
 
-      try {
-        const res = await fetch(API + "/student_login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ rollno })
-        });
-        const data = await res.json();
+<!-- ========== TOAST ========== -->
+<div id="toast" class="toast"></div>
 
-        if (data.success) {
-          showToast("Student Found!", "success");
-          showDashboard("student");
-          loadStudentDashboard(data);
-        } else {
-          showToast(data.message || "Student Not Found!", "error");
-        }
-      } catch (err) {
-        showToast("Cannot reach server! Is Flask running?", "error");
-      } finally {
-        document.getElementById("btnStudentLogin").disabled = false;
-        document.getElementById("btnStudentLogin").innerHTML = '<i class="fas fa-magnifying-glass"></i> Check Attendance';
-      }
-    }
 
-    // =============================================
-    // ADMIN DASHBOARD INIT
-    // =============================================
-    async function initAdminDashboard() {
-      // Set today's date in inputs
-      const today = new Date().toISOString().split("T")[0];
-      document.getElementById("markDate").value   = today;
-      document.getElementById("reportDate").value = today;
+<script>
+  const API = "";   // same origin — Flask serves this file from /static/
 
-      await loadStats();
-    }
+  let charts      = {};
+  let currentSec  = "A";
+  let sectionData = {};   // { rollno: {rollno, name, status} }
 
-    async function loadStats() {
-      try {
-        const res  = await fetch(API + "/get_stats");
-        const data = await res.json();
+  // ===================================================
+  // TOAST
+  // ===================================================
+  function showToast(msg, type="success") {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.className = `toast t-${type} show`;
+    setTimeout(() => t.classList.remove("show"), 3500);
+  }
 
-        if (data.success) {
-          document.getElementById("totalStu").textContent   = data.total;
-          document.getElementById("presentStu").textContent = data.present;
-          document.getElementById("absentStu").textContent  = data.absent;
-          document.getElementById("rate").textContent       = data.rate + "%";
-          renderAdminCharts(data);
-        }
-      } catch (err) {
-        showToast("Failed to load stats!", "error");
-      }
-    }
+  // ===================================================
+  // DATE HELPERS
+  // ===================================================
+  function todayISO() {
+    return new Date().toISOString().split("T")[0];
+  }
 
-    function renderAdminCharts(data) {
-      if (charts.section)    { charts.section.destroy(); }
-      if (charts.attendance) { charts.attendance.destroy(); }
+  function formatDate(iso) {
+    if (!iso) return "—";
+    const d = new Date(iso + "T00:00:00");
+    return d.toLocaleDateString("en-IN", { day:"2-digit", month:"short", year:"numeric" });
+  }
 
-      const sc = document.getElementById("sectionChart").getContext("2d");
-      charts.section = new Chart(sc, {
-        type: "pie",
-        data: {
-          labels: ["Section A", "Section B", "Section C", "Section D"],
-          datasets: [{
-            data: [
-              data.section_counts.A,
-              data.section_counts.B,
-              data.section_counts.C,
-              data.section_counts.D
-            ],
-            backgroundColor: ["#ff6b6b","#4ecdc4","#feca57","#a29bfe"],
-            borderWidth: 2,
-            borderColor: "rgba(255,255,255,0.3)"
-          }]
-        },
-        options: {
-          plugins: { legend: { labels: { color: "white" } } }
-        }
+  function dayName(iso) {
+    if (!iso) return "";
+    const d = new Date(iso + "T00:00:00");
+    return d.toLocaleDateString("en-IN", { weekday:"long" });
+  }
+
+  // ===================================================
+  // SHOW / HIDE PAGES
+  // ===================================================
+  function showPage(page) {
+    ["landing","adminDash","studentDash"].forEach(id => {
+      document.getElementById(id).style.display = "none";
+    });
+    document.getElementById(page).style.display = page === "landing" ? "flex" : "block";
+  }
+
+  function logout() {
+    showPage("landing");
+    document.getElementById("adminUser").value   = "";
+    document.getElementById("adminPass").value   = "";
+    document.getElementById("studentRoll").value = "";
+    showToast("Logged Out!", "info");
+  }
+
+  // ===================================================
+  // ADMIN LOGIN
+  // ===================================================
+  async function adminLogin() {
+    const username = document.getElementById("adminUser").value.trim();
+    const password = document.getElementById("adminPass").value.trim();
+    if (!username || !password) { showToast("Enter Username & Password!", "error"); return; }
+
+    const btn = document.getElementById("btnAdminLogin");
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+
+    try {
+      const res  = await fetch(API + "/admin_login", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({username, password})
       });
+      const data = await res.json();
 
-      const ac = document.getElementById("attendanceChart").getContext("2d");
-      charts.attendance = new Chart(ac, {
-        type: "bar",
-        data: {
-          labels: ["Present", "Absent", "Not Marked"],
-          datasets: [{
-            label: "Students Today",
-            data: [data.present, data.absent, data.total - data.present - data.absent],
-            backgroundColor: ["#4caf50","#f44336","#ff9800"],
-            borderRadius: 8
+      if (data.success) {
+        showToast("Welcome Admin!", "success");
+        showPage("adminDash");
+        initAdmin();
+      } else {
+        showToast(data.message || "Invalid credentials!", "error");
+      }
+    } catch {
+      showToast("Cannot reach server! Is Flask running?", "error");
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-right-to-bracket"></i> Login';
+    }
+  }
+
+  // ===================================================
+  // STUDENT LOGIN
+  // ===================================================
+  async function studentLogin() {
+    const rollno = document.getElementById("studentRoll").value.trim().toUpperCase();
+    if (!rollno) { showToast("Enter Roll Number!", "error"); return; }
+
+    const btn = document.getElementById("btnStudentLogin");
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
+
+    try {
+      const res  = await fetch(API + "/student_login", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({rollno})
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        showToast("Student Found!", "success");
+        showPage("studentDash");
+        loadStudentDash(data);
+      } else {
+        showToast(data.message || "Student Not Found!", "error");
+      }
+    } catch {
+      showToast("Cannot reach server! Is Flask running?", "error");
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-magnifying-glass"></i> Check My Attendance';
+    }
+  }
+
+  // ===================================================
+  // ADMIN INIT
+  // ===================================================
+  async function initAdmin() {
+    const today = todayISO();
+    document.getElementById("bulkDate").value   = today;
+    document.getElementById("reportDate").value = today;
+    await loadStats();
+    await loadSectionStudents();
+  }
+
+  // ===================================================
+  // STATS + CHARTS
+  // ===================================================
+  async function loadStats() {
+    try {
+      const res  = await fetch(API + "/get_stats");
+      const data = await res.json();
+      if (!data.success) return;
+
+      document.getElementById("totalStu").textContent   = data.total;
+      document.getElementById("presentStu").textContent = data.present;
+      document.getElementById("absentStu").textContent  = data.absent;
+      document.getElementById("rate").textContent       = data.rate + "%";
+      renderAdminCharts(data);
+    } catch { /* silent */ }
+  }
+
+  function renderAdminCharts(data) {
+    if (charts.section)    charts.section.destroy();
+    if (charts.attendance) charts.attendance.destroy();
+
+    charts.section = new Chart(
+      document.getElementById("sectionChart").getContext("2d"), {
+        type:"pie",
+        data:{
+          labels:["Section A","Section B","Section C","Section D"],
+          datasets:[{
+            data:[data.section_counts.A, data.section_counts.B, data.section_counts.C, data.section_counts.D],
+            backgroundColor:["#ff6b6b","#4ecdc4","#feca57","#a29bfe"],
+            borderColor:"rgba(255,255,255,0.25)", borderWidth:2
           }]
         },
-        options: {
-          plugins: { legend: { labels: { color: "white" } } },
-          scales: {
-            x: { ticks: { color: "white" }, grid: { color: "rgba(255,255,255,0.1)" } },
-            y: { ticks: { color: "white" }, grid: { color: "rgba(255,255,255,0.1)" } }
+        options:{ plugins:{ legend:{ labels:{ color:"white" } } } }
+      }
+    );
+
+    const notMarked = data.total - data.present - data.absent;
+    charts.attendance = new Chart(
+      document.getElementById("attendanceChart").getContext("2d"), {
+        type:"bar",
+        data:{
+          labels:["Present","Absent","Not Marked"],
+          datasets:[{
+            label:"Students Today",
+            data:[data.present, data.absent, notMarked < 0 ? 0 : notMarked],
+            backgroundColor:["#4caf50","#f44336","#ff9800"],
+            borderRadius:8
+          }]
+        },
+        options:{
+          plugins:{ legend:{ labels:{ color:"white" } } },
+          scales:{
+            x:{ ticks:{color:"white"}, grid:{color:"rgba(255,255,255,0.1)"} },
+            y:{ ticks:{color:"white"}, grid:{color:"rgba(255,255,255,0.1)"} }
           }
         }
+      }
+    );
+  }
+
+  // ===================================================
+  // SECTION SELECT
+  // ===================================================
+  function selectSection(sec, el) {
+    currentSec = sec;
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    el.classList.add("active");
+    loadSectionStudents();
+  }
+
+  // ===================================================
+  // LOAD SECTION STUDENTS (bulk grid)
+  // ===================================================
+  async function loadSectionStudents() {
+    const date = document.getElementById("bulkDate").value || todayISO();
+    const grid = document.getElementById("stuGrid");
+    grid.innerHTML = `<p style="opacity:.6;padding:20px;"><i class="fas fa-spinner fa-spin"></i> Loading Section ${currentSec}...</p>`;
+    document.getElementById("bulkSummary").style.display = "none";
+
+    try {
+      const res  = await fetch(API + "/get_section_students", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({section: currentSec, date})
       });
+      const data = await res.json();
+
+      if (!data.success) { grid.innerHTML = "<p>Failed to load.</p>"; return; }
+
+      // Store in local state
+      sectionData = {};
+      data.students.forEach(s => {
+        sectionData[s.rollno] = {...s};
+      });
+
+      renderBulkGrid();
+    } catch {
+      grid.innerHTML = "<p>Cannot reach server!</p>";
+    }
+  }
+
+  function renderBulkGrid() {
+    const grid = document.getElementById("stuGrid");
+    const students = Object.values(sectionData);
+
+    if (!students.length) { grid.innerHTML = "<p>No students found.</p>"; return; }
+
+    grid.innerHTML = students.map(s => {
+      const isPres = s.status === "Present";
+      const isAbs  = s.status === "Absent";
+      return `
+        <div class="stu-card ${isPres ? 'is-present' : isAbs ? 'is-absent' : ''}" id="card-${s.rollno}">
+          <div class="stu-info">
+            <div class="sname">${s.name}</div>
+            <div class="sroll">${s.rollno}</div>
+          </div>
+          <div class="pa-btns">
+            <button class="pa-btn pb-p ${isPres ? 'active' : ''}"
+              onclick="toggleStatus('${s.rollno}','Present')">P</button>
+            <button class="pa-btn pb-a ${isAbs ? 'active' : ''}"
+              onclick="toggleStatus('${s.rollno}','Absent')">A</button>
+          </div>
+        </div>`;
+    }).join("");
+
+    updateBulkSummary();
+  }
+
+  function toggleStatus(rollno, status) {
+    if (!sectionData[rollno]) return;
+    // Toggle off if already same
+    sectionData[rollno].status = sectionData[rollno].status === status ? "Not Marked" : status;
+
+    const card = document.getElementById("card-" + rollno);
+    const btns = card.querySelectorAll(".pa-btn");
+    const isPres = sectionData[rollno].status === "Present";
+    const isAbs  = sectionData[rollno].status === "Absent";
+
+    card.className = `stu-card ${isPres ? 'is-present' : isAbs ? 'is-absent' : ''}`;
+    btns[0].classList.toggle("active", isPres);
+    btns[1].classList.toggle("active", isAbs);
+
+    updateBulkSummary();
+  }
+
+  function markAllPresent() {
+    Object.keys(sectionData).forEach(r => sectionData[r].status = "Present");
+    renderBulkGrid();
+  }
+
+  function markAllAbsent() {
+    Object.keys(sectionData).forEach(r => sectionData[r].status = "Absent");
+    renderBulkGrid();
+  }
+
+  function updateBulkSummary() {
+    const students = Object.values(sectionData);
+    const present  = students.filter(s => s.status === "Present").length;
+    const absent   = students.filter(s => s.status === "Absent").length;
+    const unmarked = students.filter(s => s.status === "Not Marked").length;
+
+    document.getElementById("sumTotal").textContent    = students.length;
+    document.getElementById("sumPresent").textContent  = present;
+    document.getElementById("sumAbsent").textContent   = absent;
+    document.getElementById("sumUnmarked").textContent = unmarked;
+    document.getElementById("bulkSummary").style.display = "flex";
+  }
+
+  // ===================================================
+  // SUBMIT BULK ATTENDANCE
+  // ===================================================
+  async function submitBulkAttendance() {
+    const date    = document.getElementById("bulkDate").value || todayISO();
+    const records = Object.values(sectionData)
+      .filter(s => s.status !== "Not Marked")
+      .map(s => ({ rollno: s.rollno, date, status: s.status }));
+
+    if (!records.length) {
+      showToast("Mark at least one student first!", "error"); return;
     }
 
-    // =============================================
-    // MARK ATTENDANCE
-    // =============================================
-    async function markAttendance() {
-      const rollno = document.getElementById("markRoll").value.trim().toUpperCase();
-      const att_date = document.getElementById("markDate").value;
-      const status   = document.getElementById("markStatus").value;
+    const btn = document.getElementById("btnSubmit");
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
 
-      if (!rollno)    { showToast("Enter Roll Number!", "error"); return; }
-      if (!att_date)  { showToast("Select a Date!", "error"); return; }
+    try {
+      const res  = await fetch(API + "/bulk_attendance", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({records})
+      });
+      const data = await res.json();
 
-      try {
-        const res  = await fetch(API + "/mark_attendance", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ rollno, date: att_date, status })
-        });
-        const data = await res.json();
-
-        if (data.success) {
-          showToast(`Attendance Marked: ${rollno} → ${status}`, "success");
-          document.getElementById("markRoll").value = "";
-          loadStats(); // refresh stats
-        } else {
-          showToast(data.message || "Failed to mark attendance!", "error");
-        }
-      } catch (err) {
-        showToast("Cannot reach server!", "error");
+      if (data.success) {
+        showToast(data.message, "success");
+        loadStats();
+        loadSectionStudents();
+      } else {
+        showToast(data.message || "Failed!", "error");
       }
+    } catch {
+      showToast("Cannot reach server!", "error");
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Attendance for All Marked Students';
     }
+  }
 
-    // =============================================
-    // ATTENDANCE REPORT
-    // =============================================
-    async function loadReport() {
-      const att_date = document.getElementById("reportDate").value;
-      if (!att_date) { showToast("Select a Date!", "error"); return; }
+  // ===================================================
+  // REPORT
+  // ===================================================
+  async function loadReport() {
+    const date = document.getElementById("reportDate").value;
+    if (!date) { showToast("Select a date!", "error"); return; }
 
-      const wrap = document.getElementById("reportTable");
-      wrap.innerHTML = "<p style='padding:10px;opacity:0.7;'><i class='fas fa-spinner fa-spin'></i> Loading...</p>";
+    const wrap = document.getElementById("reportTable");
+    wrap.innerHTML = `<p style="padding:15px;opacity:.7;"><i class="fas fa-spinner fa-spin"></i> Loading...</p>`;
 
-      try {
-        const res  = await fetch(API + "/attendance_report", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ date: att_date })
-        });
-        const data = await res.json();
+    try {
+      const res  = await fetch(API + "/attendance_report", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({date})
+      });
+      const data = await res.json();
+      if (!data.success) { wrap.innerHTML = "<p>Failed.</p>"; return; }
 
-        if (!data.success) { wrap.innerHTML = "<p>Failed to load report.</p>"; return; }
+      const rows = data.report.map(r => {
+        const cls = r.status === "Present" ? "tag-present" : r.status === "Absent" ? "tag-absent" : "tag-notmarked";
+        return `<tr>
+          <td>${r.rollno}</td>
+          <td>${r.name}</td>
+          <td>Section ${r.section}</td>
+          <td class="${cls}">${r.status}</td>
+        </tr>`;
+      }).join("");
 
-        const rows = data.report.map(r => {
-          const cls = r.status === "Present" ? "tag-present" : r.status === "Absent" ? "tag-absent" : "";
-          return `<tr>
-            <td>${r.rollno}</td>
-            <td>${r.name}</td>
-            <td>Section ${r.section}</td>
-            <td class="${cls}">${r.status}</td>
-          </tr>`;
-        }).join("");
+      wrap.innerHTML = `
+        <p style="margin:12px 0 6px;opacity:.7;font-size:.85rem;">
+          Report for <b>${formatDate(date)}</b> — ${data.report.length} students
+        </p>
+        <table>
+          <thead><tr><th>Roll No</th><th>Name</th><th>Section</th><th>Status</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+    } catch {
+      wrap.innerHTML = "<p>Cannot reach server!</p>";
+    }
+  }
 
-        wrap.innerHTML = `
-          <table>
-            <thead><tr><th>Roll No</th><th>Name</th><th>Section</th><th>Status</th></tr></thead>
-            <tbody>${rows}</tbody>
-          </table>`;
-      } catch (err) {
-        wrap.innerHTML = "<p>Cannot reach server!</p>";
+  // ===================================================
+  // STUDENT DASHBOARD
+  // ===================================================
+  async function loadStudentDash(student) {
+    const today = todayISO();
+
+    document.getElementById("stuName").textContent    = student.name;
+    document.getElementById("stuRoll").textContent    = "Roll No: " + student.rollno;
+    document.getElementById("stuSection").textContent = "Section: " + student.section;
+
+    // Show the date they checked
+    document.getElementById("checkedDate").textContent = formatDate(today) + " (" + dayName(today) + ")";
+
+    document.getElementById("stuTodayStatus").textContent = "Loading...";
+    document.getElementById("stuTodayStatus").className   = "status-badge badge-notmarked";
+    document.getElementById("stuStatRow").style.display   = "none";
+    document.getElementById("historyList").innerHTML      = `<p style="opacity:.6;"><i class="fas fa-spinner fa-spin"></i> Loading...</p>`;
+    document.getElementById("noChartMsg").style.display   = "none";
+
+    try {
+      const res  = await fetch(API + "/student_attendance/" + student.rollno);
+      const data = await res.json();
+
+      const present = data.present_count || 0;
+      const absent  = data.absent_count  || 0;
+      const total   = present + absent;
+
+      // Today's record
+      const todayRec    = (data.history || []).find(h => h.date === today);
+      const todayStatus = todayRec ? todayRec.status : "Not Marked";
+
+      const statusEl = document.getElementById("stuTodayStatus");
+      statusEl.textContent = todayStatus;
+      statusEl.className   = "status-badge " +
+        (todayStatus === "Present" ? "badge-present" :
+         todayStatus === "Absent"  ? "badge-absent"  : "badge-notmarked");
+
+      // Stat numbers
+      if (total > 0) {
+        const pct = ((present / total) * 100).toFixed(1);
+        document.getElementById("statPresent").textContent = present;
+        document.getElementById("statAbsent").textContent  = absent;
+        document.getElementById("statPct").textContent     = pct + "%";
+        document.getElementById("stuStatRow").style.display = "flex";
       }
-    }
 
-    // =============================================
-    // STUDENT DASHBOARD
-    // =============================================
-    async function loadStudentDashboard(student) {
-      document.getElementById("stuName").textContent    = student.name;
-      document.getElementById("stuRoll").textContent    = "Roll No: " + student.rollno;
-      document.getElementById("stuSection").textContent = "Section: " + student.section;
-      document.getElementById("stuStatus").textContent  = "Loading...";
-      document.getElementById("stuStatus").className    = "badge";
-      document.getElementById("historyList").innerHTML  = "";
-      document.getElementById("stuStats").innerHTML     = "";
-
-      try {
-        const res  = await fetch(API + "/student_attendance/" + student.rollno);
-        const data = await res.json();
-
-        const presentDays = data.present_count || 0;
-        const absentDays  = data.absent_count  || 0;
-        const total       = presentDays + absentDays;
-
-        // Today's status
-        const today = new Date().toISOString().split("T")[0];
-        const todayRecord = (data.history || []).find(h => h.date === today);
-        const todayStatus = todayRecord ? todayRecord.status : "Not Marked";
-
-        const statusEl = document.getElementById("stuStatus");
-        statusEl.textContent = todayStatus;
-        statusEl.className   = "badge " + (todayStatus === "Present" ? "present" : todayStatus === "Absent" ? "absent" : "not-marked");
-
-        // Stats text
-        const pct = total > 0 ? ((presentDays / total) * 100).toFixed(1) : 0;
-        document.getElementById("stuStats").innerHTML =
-          `<span style="color:#4caf50;">✅ Present: ${presentDays}</span> &nbsp;|&nbsp; ` +
-          `<span style="color:#f44336;">❌ Absent: ${absentDays}</span> &nbsp;|&nbsp; ` +
-          `<span style="color:#feca57;">📊 ${pct}%</span>`;
-
-        // Doughnut chart
-        if (charts.student) charts.student.destroy();
-        const ctx = document.getElementById("stuChart").getContext("2d");
-
-        if (total === 0) {
-          document.getElementById("stuChart").style.display = "none";
-          document.getElementById("stuStats").innerHTML += "<br><br><small>No attendance records yet.</small>";
-        } else {
-          document.getElementById("stuChart").style.display = "block";
-          charts.student = new Chart(ctx, {
-            type: "doughnut",
-            data: {
-              labels: ["Present Days", "Absent Days"],
-              datasets: [{
-                data: [presentDays, absentDays],
-                backgroundColor: ["#4caf50","#f44336"],
-                borderWidth: 2,
-                borderColor: "rgba(255,255,255,0.3)"
+      // Doughnut chart
+      if (charts.student) charts.student.destroy();
+      if (total > 0) {
+        document.getElementById("stuChart").style.display = "block";
+        charts.student = new Chart(
+          document.getElementById("stuChart").getContext("2d"), {
+            type:"doughnut",
+            data:{
+              labels:["Present","Absent"],
+              datasets:[{
+                data:[present, absent],
+                backgroundColor:["#4caf50","#f44336"],
+                borderColor:"rgba(255,255,255,0.25)", borderWidth:2
               }]
             },
-            options: {
-              plugins: { legend: { labels: { color: "white" } } }
-            }
-          });
-        }
-
-        // History list
-        const histEl = document.getElementById("historyList");
-        if (data.history && data.history.length > 0) {
-          histEl.innerHTML = data.history.map(h => `
-            <div class="history-item">
-              <span>${h.date}</span>
-              <span class="${h.status === 'Present' ? 'tag-present' : 'tag-absent'}">${h.status}</span>
-            </div>`).join("");
-        } else {
-          histEl.innerHTML = "<p style='opacity:0.7;margin-top:10px;'>No attendance history found.</p>";
-        }
-
-      } catch (err) {
-        document.getElementById("stuStatus").textContent = "Error";
-        showToast("Cannot reach server!", "error");
+            options:{ plugins:{ legend:{ labels:{ color:"white" } } } }
+          }
+        );
+      } else {
+        document.getElementById("stuChart").style.display = "none";
+        document.getElementById("noChartMsg").style.display = "block";
       }
-    }
 
-    // =============================================
-    // FORGOT PASSWORD MODAL
-    // =============================================
-    function openForgotModal()  { document.getElementById("forgotModal").classList.add("show"); }
-    function closeForgotModal() { document.getElementById("forgotModal").classList.remove("show"); }
-
-    async function sendForgotPassword() {
-      const email = document.getElementById("forgotEmail").value.trim();
-      if (!email) { showToast("Enter your email!", "error"); return; }
-
-      try {
-        const res  = await fetch(API + "/forgot_password", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email })
-        });
-        const data = await res.json();
-
-        if (data.success) {
-          showToast("Password sent to your email!", "success");
-          closeForgotModal();
-          document.getElementById("forgotEmail").value = "";
-        } else {
-          showToast(data.message || "Failed to send email!", "error");
-        }
-      } catch (err) {
-        showToast("Cannot reach server!", "error");
+      // History list — with full date display
+      const histEl = document.getElementById("historyList");
+      if (data.history && data.history.length > 0) {
+        histEl.innerHTML = data.history.map(h => `
+          <div class="history-item">
+            <div>
+              <div class="hdate">${formatDate(h.date)}</div>
+              <div class="hday">${dayName(h.date)}</div>
+            </div>
+            <span class="${h.status === 'Present' ? 'tag-present' : 'tag-absent'}">
+              ${h.status === 'Present' ? '✅ Present' : '❌ Absent'}
+            </span>
+          </div>`).join("");
+      } else {
+        histEl.innerHTML = `<p style="opacity:.6;padding:10px;">No attendance history found yet.<br>Ask your teacher to mark attendance.</p>`;
       }
+
+    } catch {
+      document.getElementById("stuTodayStatus").textContent = "Error";
+      showToast("Cannot reach server!", "error");
     }
+  }
 
-    // =============================================
-    // ENTER KEY SUPPORT
-    // =============================================
-    document.addEventListener("keypress", (e) => {
-      if (e.key !== "Enter") return;
-      const landing = document.getElementById("landing");
-      if (landing.style.display === "none") return;
+  // ===================================================
+  // FORGOT PASSWORD MODAL
+  // ===================================================
+  function openForgotModal()  { document.getElementById("forgotModal").classList.add("show"); }
+  function closeForgotModal() {
+    document.getElementById("forgotModal").classList.remove("show");
+    document.getElementById("forgotEmail").value = "";
+  }
 
-      const active = document.activeElement.id;
-      if (active === "adminUser" || active === "adminPass") adminLogin();
-      if (active === "studentRoll") studentLogin();
-      if (active === "forgotEmail") sendForgotPassword();
-    });
+  async function sendForgotPassword() {
+    const email = document.getElementById("forgotEmail").value.trim();
+    if (!email) { showToast("Enter your Gmail address!", "error"); return; }
 
-    // Close modal on overlay click
-    document.getElementById("forgotModal").addEventListener("click", function(e) {
-      if (e.target === this) closeForgotModal();
-    });
-  </script>
+    try {
+      const res  = await fetch(API + "/forgot_password", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({email})
+      });
+      const data = await res.json();
 
+      if (data.success) {
+        showToast("✅ " + data.message, "success");
+        closeForgotModal();
+      } else {
+        showToast("❌ " + data.message, "error");
+      }
+    } catch {
+      showToast("Cannot reach server!", "error");
+    }
+  }
+
+  // ===================================================
+  // ENTER KEY
+  // ===================================================
+  document.addEventListener("keypress", e => {
+    if (e.key !== "Enter") return;
+    const landing = document.getElementById("landing");
+    if (landing.style.display === "none") return;
+    const id = document.activeElement.id;
+    if (id === "adminUser" || id === "adminPass") adminLogin();
+    if (id === "studentRoll") studentLogin();
+    if (id === "forgotEmail") sendForgotPassword();
+  });
+
+  // Close modal on backdrop click
+  document.getElementById("forgotModal").addEventListener("click", function(e) {
+    if (e.target === this) closeForgotModal();
+  });
+
+  // Reload grid when date changes
+  document.getElementById("bulkDate").addEventListener("change", loadSectionStudents);
+</script>
 </body>
 </html>
