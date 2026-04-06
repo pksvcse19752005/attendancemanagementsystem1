@@ -433,12 +433,16 @@
 
 <!-- ========== FORGOT PASSWORD MODAL ========== -->
 <div id="forgotModal" class="modal-overlay">
-  <div class="modal-box">
+  <div class="modal-box" style="text-align:center;">
     <h3><i class="fas fa-key"></i> Forgot Password</h3>
-    <p class="mini" style="margin-bottom:15px;opacity:.85;">Enter your Gmail address. Your password will be sent instantly.</p>
-    <input id="forgotEmail" type="email" placeholder="Enter your Gmail address"/>
+    <div style="font-size:3rem;margin:18px 0;">📧</div>
+    <p style="margin-bottom:8px;font-size:1.05rem;font-weight:600;">Send password to admin Gmail?</p>
+    <p class="mini" style="margin-bottom:22px;opacity:.75;">
+      Password will be sent to<br>
+      <b>vinaypydi6@gmail.com</b>
+    </p>
     <button class="btn" id="btnForgot" onclick="sendForgotPassword()">
-      <i class="fas fa-paper-plane"></i> Send Password to Gmail
+      <i class="fas fa-paper-plane"></i> Yes, Send Now
     </button>
     <button class="btn btn-danger" onclick="closeForgotModal()" style="margin-top:4px;">
       <i class="fas fa-times"></i> Cancel
@@ -932,9 +936,6 @@
   }
 
   async function sendForgotPassword() {
-    const email = document.getElementById("forgotEmail").value.trim();
-    if (!email) { showToast("Enter your Gmail address!", "error"); return; }
-
     const btn = document.getElementById("btnForgot");
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
@@ -942,22 +943,22 @@
     try {
       const res  = await fetch(API + "/forgot_password", {
         method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({email})
+        body: JSON.stringify({})
       });
       const data = await res.json();
 
       if (data.success) {
-        showToast("✅ Password sent! Check your Gmail inbox.", "success");
+        showToast("✅ Password sent to vinaypydi6@gmail.com!", "success");
         closeForgotModal();
       } else {
-        // Never show raw server/tech errors to user
-        showToast("❌ Failed to send email. Please contact your administrator.", "error");
+        showToast("❌ " + (data.message || "Unknown error"), "error");
+        console.error("Forgot password error:", data.message);
       }
     } catch {
       showToast("❌ Cannot reach server. Try again later.", "error");
     } finally {
       btn.disabled = false;
-      btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Password to Gmail';
+      btn.innerHTML = '<i class="fas fa-paper-plane"></i> Yes, Send Now';
     }
   }
 
