@@ -325,10 +325,11 @@ def attendance_report():
 
 
 # ==========================================
-# FORGOT PASSWORD — uses Render env variables
-# On Render Dashboard → Environment → Add:
-#   SENDER_EMAIL    = yourgmail@gmail.com
-#   SENDER_PASSWORD = your_16_char_app_password
+# FORGOT PASSWORD
+# Render blocks port 465 SSL — use 587 STARTTLS.
+# On Render Dashboard -> Environment -> Add:
+#   SENDER_EMAIL     = yourgmail@gmail.com
+#   SENDER_PASSWORD  = xxxx xxxx xxxx xxxx  (Gmail App Password)
 # ==========================================
 @app.route("/forgot_password", methods=["POST"])
 def forgot_password():
@@ -337,36 +338,45 @@ def forgot_password():
         return jsonify({"success": False, "message": "Email is required"})
 
     if not SENDER_EMAIL or not SENDER_PASSWORD:
-        return jsonify({"success": False, "message": "Email not configured on server. Add SENDER_EMAIL and SENDER_PASSWORD in Render environment variables."})
+        return jsonify({"success": False, "message": "Email service not configured"})
 
     try:
         msg = EmailMessage()
-        msg["Subject"] = "Attendance System — Password Recovery"
+        msg["Subject"] = "Attendance System - Password Recovery"
         msg["From"]    = SENDER_EMAIL
         msg["To"]      = email
-        msg.set_content(f"""
-Hello Sir / Leader,
+        msg.set_content(
+            "Hello Sir / Leader,
 
-Your Admin Login Credentials:
+"
+            "Your Admin Login Credentials:
 
-  Username : admin
-  Password : admin123
+"
+            "  Username : admin
+"
+            "  Password : admin123
 
-Login URL  : https://your-render-app.onrender.com
-
-Thank You,
+"
+            "Thank You,
 Attendance Management System
-""")
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+"
+        )
+        # Port 587 STARTTLS works on Render (port 465 SSL is blocked)
+        with smtplib.SMTP("smtp.gmail.com", 587, timeout=15) as smtp:
+            smtp.ehlo()
+            smtp.starttls()
+            smtp.ehlo()
             smtp.login(SENDER_EMAIL, SENDER_PASSWORD)
             smtp.send_message(msg)
 
         return jsonify({"success": True, "message": "Password sent to your Gmail!"})
 
     except smtplib.SMTPAuthenticationError:
-        return jsonify({"success": False, "message": "Gmail auth failed. Check SENDER_EMAIL and SENDER_PASSWORD (use App Password, not Gmail password)."})
+        print("SMTP Auth Error: Check SENDER_EMAIL and SENDER_PASSWORD env vars")
+        return jsonify({"success": False, "message": "Email sending failed"})
     except Exception as e:
-        return jsonify({"success": False, "message": str(e)})
+        print(f"SMTP Error: {e}")
+        return jsonify({"success": False, "message": "Email sending failed"})
 
 
 # ==========================================
@@ -374,4 +384,3 @@ Attendance Management System
 # ==========================================
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
-
