@@ -346,20 +346,11 @@ def forgot_password():
         msg["From"]    = SENDER_EMAIL
         msg["To"]      = email
         msg.set_content(
-            "Hello Sir / Leader,
-
-"
-            "Your Admin Login Credentials:
-
-"
-            "  Username : admin
-"
-            "  Password : admin123
-
-"
-            "Thank You,
-Attendance Management System
-"
+            "Hello Sir / Leader,\n\n"
+            "Your Admin Login Credentials:\n\n"
+            "  Username : admin\n"
+            "  Password : admin123\n\n"
+            "Thank You,\nAttendance Management System\n"
         )
         # Port 587 STARTTLS works on Render (port 465 SSL is blocked)
         with smtplib.SMTP("smtp.gmail.com", 587, timeout=15) as smtp:
