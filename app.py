@@ -331,12 +331,13 @@ def attendance_report():
 #   SENDER_EMAIL     = yourgmail@gmail.com
 #   SENDER_PASSWORD  = xxxx xxxx xxxx xxxx  (Gmail App Password)
 # ==========================================
+# Admin's fixed email — password always sent here
+ADMIN_EMAIL    = "vinaypydi6@gmail.com"
+ADMIN_USERNAME = "admin"
+ADMIN_PASSWORD = "admin123"
+
 @app.route("/forgot_password", methods=["POST"])
 def forgot_password():
-    email = request.json.get("email", "").strip()
-    if not email:
-        return jsonify({"success": False, "message": "Email is required"})
-
     if not SENDER_EMAIL or not SENDER_PASSWORD:
         return jsonify({"success": False, "message": "Email service not configured"})
 
@@ -344,15 +345,14 @@ def forgot_password():
         msg = EmailMessage()
         msg["Subject"] = "Attendance System - Password Recovery"
         msg["From"]    = SENDER_EMAIL
-        msg["To"]      = email
+        msg["To"]      = ADMIN_EMAIL
         msg.set_content(
             "Hello Sir / Leader,\n\n"
             "Your Admin Login Credentials:\n\n"
-            "  Username : admin\n"
-            "  Password : admin123\n\n"
+            f"  Username : {ADMIN_USERNAME}\n"
+            f"  Password : {ADMIN_PASSWORD}\n\n"
             "Thank You,\nAttendance Management System\n"
         )
-        # Port 587 STARTTLS works on Render (port 465 SSL is blocked)
         with smtplib.SMTP("smtp.gmail.com", 587, timeout=15) as smtp:
             smtp.ehlo()
             smtp.starttls()
@@ -360,14 +360,21 @@ def forgot_password():
             smtp.login(SENDER_EMAIL, SENDER_PASSWORD)
             smtp.send_message(msg)
 
-        return jsonify({"success": True, "message": "Password sent to your Gmail!"})
+        return jsonify({"success": True, "message": f"Password sent to {ADMIN_EMAIL}"})
 
-    except smtplib.SMTPAuthenticationError:
-        print("SMTP Auth Error: Check SENDER_EMAIL and SENDER_PASSWORD env vars")
-        return jsonify({"success": False, "message": "Email sending failed"})
+    except smtplib.SMTPAuthenticationError as e:
+        print(f"[SMTP AUTH ERROR] {e}")
+        return jsonify({"success": False, "message": f"AUTH_ERROR: {str(e)}"})
+    except smtplib.SMTPException as e:
+        print(f"[SMTP ERROR] {e}")
+        return jsonify({"success": False, "message": f"SMTP_ERROR: {str(e)}"})
+    except OSError as e:
+        print(f"[NETWORK ERROR] {e}")
+        return jsonify({"success": False, "message": f"NETWORK_ERROR: {str(e)}"})
     except Exception as e:
-        print(f"SMTP Error: {e}")
-        return jsonify({"success": False, "message": "Email sending failed"})
+        import traceback
+        print(f"[UNEXPECTED ERROR] {traceback.format_exc()}")
+        return jsonify({"success": False, "message": f"ERROR: {str(e)}"})
 
 
 # ==========================================
