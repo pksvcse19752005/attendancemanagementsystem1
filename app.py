@@ -1,9 +1,9 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import sqlite3
-import smtplib
 import os
-from email.message import EmailMessage
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 from datetime import date
 
 app = Flask(__name__)
@@ -11,15 +11,7 @@ CORS(app)
 
 DB_NAME = "attendance.db"
 
-# ==========================================
-# EMAIL CONFIG — Set these in Render Dashboard
-# Environment Variables → Add:
-#   SENDER_EMAIL = yourgmail@gmail.com
-#   SENDER_PASSWORD = your_gmail_app_password
-# ==========================================
-SENDER_EMAIL    = os.environ.get("SENDER_EMAIL", "")
-SENDER_PASSWORD = os.environ.get("SENDER_PASSWORD", "")
-
+SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY", "")
 # ==========================================
 # ALL STUDENT DATA (rollno, name, section)
 # ==========================================
@@ -336,46 +328,43 @@ ADMIN_EMAIL    = "vinaypydi6@gmail.com"
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "admin123"
 
+
 @app.route("/forgot_password", methods=["POST"])
 def forgot_password():
-    if not SENDER_EMAIL or not SENDER_PASSWORD:
-        return jsonify({"success": False, "message": "Email service not configured"})
-
     try:
-        msg = EmailMessage()
-        msg["Subject"] = "Attendance System - Password Recovery"
-        msg["From"]    = SENDER_EMAIL
-        msg["To"]      = ADMIN_EMAIL
-        msg.set_content(
-            "Hello Sir / Leader,\n\n"
-            "Your Admin Login Credentials:\n\n"
-            f"  Username : {ADMIN_USERNAME}\n"
-            f"  Password : {ADMIN_PASSWORD}\n\n"
-            "Thank You,\nAttendance Management System\n"
+        message = Mail(
+            from_email="vinaypydi6@gmail.com",   # your verified sender
+            to_emails=ADMIN_EMAIL,
+            subject="Attendance System - Password Recovery",
+            plain_text_content=f"""
+Hello Sir / Leader,
+
+Your Admin Login Credentials:
+
+Username : {ADMIN_USERNAME}
+Password : {ADMIN_PASSWORD}
+
+Thank You,
+Attendance Management System
+"""
         )
-        with smtplib.SMTP("smtp.gmail.com", 587, timeout=15) as smtp:
-            smtp.ehlo()
-            smtp.starttls()
-            smtp.ehlo()
-            smtp.login(SENDER_EMAIL, SENDER_PASSWORD)
-            smtp.send_message(msg)
 
-        return jsonify({"success": True, "message": f"Password sent to {ADMIN_EMAIL}"})
+        sg = SendGridAPIClient(os.environ.get("SENDGRID_API_KEY"))
+        response = sg.send(message)
 
-    except smtplib.SMTPAuthenticationError as e:
-        print(f"[SMTP AUTH ERROR] {e}")
-        return jsonify({"success": False, "message": f"AUTH_ERROR: {str(e)}"})
-    except smtplib.SMTPException as e:
-        print(f"[SMTP ERROR] {e}")
-        return jsonify({"success": False, "message": f"SMTP_ERROR: {str(e)}"})
-    except OSError as e:
-        print(f"[NETWORK ERROR] {e}")
-        return jsonify({"success": False, "message": f"NETWORK_ERROR: {str(e)}"})
+        print("SendGrid Status Code:", response.status_code)
+
+        return jsonify({
+            "success": True,
+            "message": f"Password sent to {ADMIN_EMAIL}"
+        })
+
     except Exception as e:
-        import traceback
-        print(f"[UNEXPECTED ERROR] {traceback.format_exc()}")
-        return jsonify({"success": False, "message": f"ERROR: {str(e)}"})
-
+        print("SENDGRID ERROR:", str(e))
+        return jsonify({
+            "success": False,
+            "message": f"SENDGRID_ERROR: {str(e)}"
+        })
 
 # ==========================================
 # RUN
