@@ -210,7 +210,7 @@ def attendance_report():
     records = cur.fetchall()
     conn.close()
     return jsonify({"success": True, "report": [{"rollno": r["rollno"], "name": r["name"], "section": r["section"], "status": r["status"]} for r in records]})
-@app.route("/download_report", methods=["POST"])
+@app.route('/download_report', methods=['GET'])
 def download_report():
     att_date = request.json.get("date", date.today().isoformat())
 
