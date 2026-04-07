@@ -212,8 +212,10 @@ def attendance_report():
     return jsonify({"success": True, "report": [{"rollno": r["rollno"], "name": r["name"], "section": r["section"], "status": r["status"]} for r in records]})
 @app.route('/download_report', methods=['GET'])
 def download_report():
-    att_date = request.json.get("date", date.today().isoformat())
-
+    date = request.args.get('date')
+    
+    if not date:
+        return {"success": False, "message": "Date is required"}, 400
     conn = connect_db()
     cur = conn.cursor()
     cur.execute("""
