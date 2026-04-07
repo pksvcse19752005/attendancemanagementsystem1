@@ -1,9 +1,9 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import sqlite3
-import smtplib
 import os
-from email.message import EmailMessage
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 from datetime import date
 
 app = Flask(__name__)
@@ -11,18 +11,10 @@ CORS(app)
 
 DB_NAME = "attendance.db"
 
-# ==========================================
-# EMAIL CONFIG — Set these in Render Dashboard
-# Environment Variables → Add:
-#   SENDER_EMAIL = yourgmail@gmail.com
-#   SENDER_PASSWORD = your_gmail_app_password
-# ==========================================
-SENDER_EMAIL    = os.environ.get("SENDER_EMAIL", "")
-SENDER_PASSWORD = os.environ.get("SENDER_PASSWORD", "")
+ADMIN_EMAIL    = "vinaypydi6@gmail.com"
+ADMIN_USERNAME = "admin"
+ADMIN_PASSWORD = "admin123"
 
-# ==========================================
-# ALL STUDENT DATA (rollno, name, section)
-# ==========================================
 STUDENTS_DATA = [
     ('23KD1A0501','ABDUL GUFFRAN','A'),('23KD1A0502','ADAPAKA TEJASRI','A'),('23KD1A0503','ADDANKI MAHESWARI','A'),('23KD1A0504','ALAMANDA SANJANA BLESSY','A'),
     ('23KD1A0505','ALAVELLI SRIPRIYA','A'),('23KD1A0506','AAMUDALA RAJESH','A'),('23KD1A0507','APPANA PRANEETH KUMAR','A'),('23KD1A0508','BADIGANTI MANOJ','A'),
@@ -42,7 +34,6 @@ STUDENTS_DATA = [
     ('23KD1A0562','GEDELA SATEESH','A'),('23KD1A0563','GOLLU ADITYA','A'),('23KD1A0564','GOLLU PAVAN KUMAR','A'),('23KD1A0565','GORLE HARITHA','A'),
     ('23KD1A0566','GOTTAPU LAKSHMI CHARAN','A'),('22KD1A0575','KANDUKURI ABHILASH','A'),('24KD5A0501','BANDARU SREERAM','A'),('24KD5A0502','BAVISETTI MANOJ KUMAR','A'),
     ('24KD5A0503','BENDI BHAVANI','A'),('24KD5A0504','BONDA SURESH','A'),('24KD5A0505','GOLAJANI JHANSI','A'),('20KD1A05G5','SIMMITI KARUNA BABU','A'),
-
     ('23KD1A0567','GRANDHI MANASA','B'),('23KD1A0568','GUDDALA JAHNAVI','B'),('23KD1A0569','GUDEPU YASWANTH','B'),('23KD1A0570','GUDLA BHARATHI RATHNA KUMARI','B'),
     ('23KD1A0571','GULAMAJJI BHARGAV','B'),('23KD1A0572','GUNANA SAILAJA','B'),('23KD1A0573','GUNDU PRIYANKA','B'),('23KD1A0574','GUNTUKU ABHISHEK SAI','B'),
     ('23KD1A0575','GURRALA NAGA VARSHITHA','B'),('23KD1A0576','GURUGU VINAY KUMAR','B'),('23KD1A0577','HARIDASULA HARSHA VARDHAN','B'),('23KD1A0578','IMANDI HARISH','B'),
@@ -60,7 +51,6 @@ STUDENTS_DATA = [
     ('23KD1A05C6','KURIMINELLI POOJITHA','B'),('23KD1A05C7','LENKA BHARGAVI','B'),('23KD1A05C8','LODAGALA THARUN','B'),('23KD1A05C9','MADHABATHULA MANOJ KUMAR','B'),
     ('23KD1A05D0','MAJJI BHANUSRI','B'),('23KD1A05D1','MAMIDI MARUTHI PRASAD','B'),('23KD1A05D2','NAGIREDLA SRAVANI','B'),('24KD5A0506','GOLLU DURGAPRASAD','B'),
     ('24KD5A0507','GUNDU BALU','B'),('24KD5A0508','JAJIMOGGALA SRAVANTHI','B'),('24KD5A0509','KOTNANA LAHARI','B'),('24KD5A0510','MADDI KUMAR','B'),('24KD5A0511','MANDALA MAHESH NAIDU','B'),
-
     ('23KD1A05D3','M BHARGAVI','C'),('23KD1A05D4','M PRAVALLIKA','C'),('23KD1A05D5','M VARAPRASAD','C'),('23KD1A05D6','M MEGHANA','C'),
     ('23KD1A05D7','M SWETHA','C'),('23KD1A05D8','M ABHINAV','C'),('23KD1A05D9','M NAVYATHA','C'),('23KD1A05E0','M SINDHUJA','C'),
     ('23KD1A05E1','M PRANATHI','C'),('23KD1A05E2','M HARSHITHA','C'),('23KD1A05E3','M SHARMILA','C'),('23KD1A05E4','M SHAILAJA','C'),
@@ -78,7 +68,6 @@ STUDENTS_DATA = [
     ('23KD1A05J3','P PRIYANKA','C'),('23KD1A05J4','P CHITTI BABU','C'),('23KD1A05J5','P MYTHRI','C'),('23KD1A05J6','JAHNAVI LATHA','C'),
     ('23KD1A05J8','P VARUDHINI','C'),('24KD5A0512','P REENUKA','C'),('24KD5A0513','P NAGESHWARI','C'),('24KD5A0514','P VINAY','C'),
     ('24KD5A0515','R PREMKUMAR','C'),('24KD5A0516','S SUJATHA','C'),('24KD5A0517','S KUMARRAJA','C'),
-
     ('23KD1A05J9','PORAPU PADMA','D'),('23KD1A05K0','POTHINA APPALA DURGA GUNA MANASA SREE','D'),('23KD1A05K1','POTIPARTHI CHARISHMA','D'),('23KD1A05K2','POTIPIREDDI VANDANA','D'),
     ('23KD1A05K3','POTNURU LEELA KUMARI','D'),('23KD1A05K4','PUDI SANJANA','D'),('23KD1A05K5','PURIJALA RAMACHANDRA RAO','D'),('23KD1A05K6','PUSAPATI SATWIK VARMA','D'),
     ('23KD1A05K7','PUVVALA SAI BHARADWAJ','D'),('23KD1A05K8','PYLA SRAVYA','D'),('23KD1A05K9','RAGHUMANDA SAITEJA','D'),('23KD1A05L0','RAGHUMANDA SRAVANTHI','D'),
@@ -100,74 +89,34 @@ STUDENTS_DATA = [
     ('24KD5A0525','REDDI SANDHYA','D'),
 ]
 
-
-# ==========================================
-# DATABASE
-# ==========================================
 def connect_db():
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     return conn
 
-
 def create_tables():
     conn = connect_db()
     cur = conn.cursor()
-
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS students (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            rollno TEXT UNIQUE,
-            name TEXT,
-            section TEXT
-        )
-    """)
-
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS attendance (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            rollno TEXT,
-            date TEXT,
-            status TEXT,
-            UNIQUE(rollno, date)
-        )
-    """)
-
+    cur.execute("CREATE TABLE IF NOT EXISTS students (id INTEGER PRIMARY KEY AUTOINCREMENT, rollno TEXT UNIQUE, name TEXT, section TEXT)")
+    cur.execute("CREATE TABLE IF NOT EXISTS attendance (id INTEGER PRIMARY KEY AUTOINCREMENT, rollno TEXT, date TEXT, status TEXT, UNIQUE(rollno, date))")
     for rollno, name, section in STUDENTS_DATA:
-        cur.execute(
-            "INSERT OR IGNORE INTO students (rollno, name, section) VALUES (?, ?, ?)",
-            (rollno, name, section)
-        )
-
+        cur.execute("INSERT OR IGNORE INTO students (rollno, name, section) VALUES (?, ?, ?)", (rollno, name, section))
     conn.commit()
     conn.close()
 
-
 create_tables()
 
-
-# ==========================================
-# SERVE FRONTEND
-# ==========================================
 @app.route("/")
 def home():
     return send_from_directory("static", "attendance1.html")
 
-
-# ==========================================
-# ADMIN LOGIN
-# ==========================================
 @app.route("/admin_login", methods=["POST"])
 def admin_login():
     data = request.json
-    if data.get("username") == "admin" and data.get("password") == "admin123":
+    if data.get("username") == ADMIN_USERNAME and data.get("password") == ADMIN_PASSWORD:
         return jsonify({"success": True})
     return jsonify({"success": False, "message": "Invalid Username or Password"})
 
-
-# ==========================================
-# STUDENT LOGIN
-# ==========================================
 @app.route("/student_login", methods=["POST"])
 def student_login():
     rollno = request.json.get("rollno", "").upper().strip()
@@ -176,209 +125,144 @@ def student_login():
     cur.execute("SELECT * FROM students WHERE rollno=?", (rollno,))
     s = cur.fetchone()
     conn.close()
-
     if s:
         return jsonify({"success": True, "rollno": s["rollno"], "name": s["name"], "section": s["section"]})
     return jsonify({"success": False, "message": "Student Not Found"})
 
-
-# ==========================================
-# GET STATS FOR ADMIN DASHBOARD
-# ==========================================
 @app.route("/get_stats", methods=["GET"])
 def get_stats():
     today = date.today().isoformat()
     conn = connect_db()
     cur = conn.cursor()
-
     cur.execute("SELECT COUNT(*) as total FROM students")
     total = cur.fetchone()["total"]
-
     cur.execute("SELECT COUNT(*) as cnt FROM attendance WHERE date=? AND status='Present'", (today,))
     present = cur.fetchone()["cnt"]
-
     cur.execute("SELECT COUNT(*) as cnt FROM attendance WHERE date=? AND status='Absent'", (today,))
     absent = cur.fetchone()["cnt"]
-
     section_counts = {}
-    for sec in ['A', 'B', 'C', 'D']:
+    for sec in ['A','B','C','D']:
         cur.execute("SELECT COUNT(*) as cnt FROM students WHERE section=?", (sec,))
         section_counts[sec] = cur.fetchone()["cnt"]
-
     conn.close()
     rate = round((present / total) * 100, 1) if total > 0 else 0
+    return jsonify({"success": True, "total": total, "present": present, "absent": absent, "rate": rate, "section_counts": section_counts})
 
-    return jsonify({
-        "success": True, "total": total, "present": present,
-        "absent": absent, "rate": rate, "section_counts": section_counts
-    })
-
-
-# ==========================================
-# GET STUDENTS BY SECTION (for bulk marking)
-# ==========================================
 @app.route("/get_section_students", methods=["POST"])
 def get_section_students():
     data = request.json
     section = data.get("section", "A")
     att_date = data.get("date", date.today().isoformat())
-
     conn = connect_db()
     cur = conn.cursor()
-
     cur.execute("""
-        SELECT s.rollno, s.name, s.section,
-               COALESCE(a.status, 'Not Marked') as status
+        SELECT s.rollno, s.name, COALESCE(a.status, 'Not Marked') as status
         FROM students s
         LEFT JOIN attendance a ON s.rollno = a.rollno AND a.date = ?
-        WHERE s.section = ?
-        ORDER BY s.rollno
+        WHERE s.section = ? ORDER BY s.rollno
     """, (att_date, section))
-
     students = cur.fetchall()
     conn.close()
+    return jsonify({"success": True, "students": [{"rollno": r["rollno"], "name": r["name"], "status": r["status"]} for r in students]})
 
-    return jsonify({
-        "success": True,
-        "students": [{"rollno": r["rollno"], "name": r["name"], "status": r["status"]} for r in students]
-    })
-
-
-# ==========================================
-# BULK MARK ATTENDANCE (entire section at once)
-# ==========================================
 @app.route("/bulk_attendance", methods=["POST"])
 def bulk_attendance():
-    data = request.json
-    records = data.get("records", [])  # [{rollno, date, status}, ...]
-
+    records = request.json.get("records", [])
     if not records:
         return jsonify({"success": False, "message": "No records provided"})
-
     conn = connect_db()
     cur = conn.cursor()
-
     for r in records:
-        cur.execute("""
-            INSERT INTO attendance (rollno, date, status) VALUES (?, ?, ?)
-            ON CONFLICT(rollno, date) DO UPDATE SET status=excluded.status
-        """, (r["rollno"], r["date"], r["status"]))
-
+        cur.execute("INSERT INTO attendance (rollno, date, status) VALUES (?, ?, ?) ON CONFLICT(rollno, date) DO UPDATE SET status=excluded.status",
+                    (r["rollno"], r["date"], r["status"]))
     conn.commit()
     conn.close()
-
     return jsonify({"success": True, "message": f"Attendance saved for {len(records)} students!"})
 
-
-# ==========================================
-# STUDENT ATTENDANCE HISTORY
-# ==========================================
 @app.route("/student_attendance/<rollno>", methods=["GET"])
 def student_attendance(rollno):
     rollno = rollno.upper().strip()
     conn = connect_db()
     cur = conn.cursor()
-
     cur.execute("SELECT date, status FROM attendance WHERE rollno=? ORDER BY date DESC", (rollno,))
     records = cur.fetchall()
-
     cur.execute("SELECT COUNT(*) as cnt FROM attendance WHERE rollno=? AND status='Present'", (rollno,))
     present_count = cur.fetchone()["cnt"]
-
     cur.execute("SELECT COUNT(*) as cnt FROM attendance WHERE rollno=? AND status='Absent'", (rollno,))
     absent_count = cur.fetchone()["cnt"]
-
     conn.close()
+    return jsonify({"success": True, "history": [{"date": r["date"], "status": r["status"]} for r in records],
+                    "present_count": present_count, "absent_count": absent_count})
 
-    return jsonify({
-        "success": True,
-        "history": [{"date": r["date"], "status": r["status"]} for r in records],
-        "present_count": present_count,
-        "absent_count": absent_count
-    })
-
-
-# ==========================================
-# ATTENDANCE REPORT BY DATE
-# ==========================================
 @app.route("/attendance_report", methods=["POST"])
 def attendance_report():
     att_date = request.json.get("date", date.today().isoformat())
     conn = connect_db()
     cur = conn.cursor()
-
     cur.execute("""
-        SELECT s.rollno, s.name, s.section,
-               COALESCE(a.status, 'Not Marked') as status
+        SELECT s.rollno, s.name, s.section, COALESCE(a.status, 'Not Marked') as status
         FROM students s
         LEFT JOIN attendance a ON s.rollno = a.rollno AND a.date = ?
         ORDER BY s.section, s.rollno
     """, (att_date,))
-
     records = cur.fetchall()
     conn.close()
-
-    return jsonify({
-        "success": True,
-        "report": [{"rollno": r["rollno"], "name": r["name"], "section": r["section"], "status": r["status"]} for r in records]
-    })
+    return jsonify({"success": True, "report": [{"rollno": r["rollno"], "name": r["name"], "section": r["section"], "status": r["status"]} for r in records]})
 
 
 # ==========================================
-# FORGOT PASSWORD
-# Render blocks port 465 SSL — use 587 STARTTLS.
-# On Render Dashboard -> Environment -> Add:
-#   SENDER_EMAIL     = yourgmail@gmail.com
-#   SENDER_PASSWORD  = xxxx xxxx xxxx xxxx  (Gmail App Password)
+# FORGOT PASSWORD — SendGrid
+#
+# Render Dashboard → Environment → Add:
+#   SENDGRID_API_KEY = SG.xxxxxxxxxxxxxxxx
+#   SENDER_EMAIL     = vinaypydi6@gmail.com
+#
+# IMPORTANT — Verify sender in SendGrid (one time):
+#   app.sendgrid.com → Settings → Sender Authentication
+#   → Verify a Single Sender → use vinaypydi6@gmail.com
+#   → Check Gmail inbox → click verify link → Done
 # ==========================================
-# Admin's fixed email — password always sent here
-ADMIN_EMAIL    = "vinaypydi6@gmail.com"
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "admin123"
-
 @app.route("/forgot_password", methods=["POST"])
 def forgot_password():
-    if not SENDER_EMAIL or not SENDER_PASSWORD:
-        return jsonify({"success": False, "message": "Email service not configured"})
+    api_key = os.environ.get("SENDGRID_API_KEY", "").strip()
+    sender  = os.environ.get("SENDER_EMAIL", "").strip()
+
+    if not api_key:
+        return jsonify({"success": False, "message": "SENDGRID_API_KEY not set in Render env vars"})
+    if not sender:
+        return jsonify({"success": False, "message": "SENDER_EMAIL not set in Render env vars"})
 
     try:
-        msg = EmailMessage()
-        msg["Subject"] = "Attendance System - Password Recovery"
-        msg["From"]    = SENDER_EMAIL
-        msg["To"]      = ADMIN_EMAIL
-        msg.set_content(
-            "Hello Sir / Leader,\n\n"
-            "Your Admin Login Credentials:\n\n"
-            f"  Username : {ADMIN_USERNAME}\n"
-            f"  Password : {ADMIN_PASSWORD}\n\n"
-            "Thank You,\nAttendance Management System\n"
+        message = Mail(
+            from_email=sender,
+            to_emails=ADMIN_EMAIL,
+            subject="Attendance System - Password Recovery",
+            plain_text_content=(
+                "Hello Sir / Leader,\n\n"
+                "Your Admin Login Credentials:\n\n"
+                f"  Username : {ADMIN_USERNAME}\n"
+                f"  Password : {ADMIN_PASSWORD}\n\n"
+                "Thank You,\nAttendance Management System"
+            )
         )
-        with smtplib.SMTP("smtp.gmail.com", 587, timeout=15) as smtp:
-            smtp.ehlo()
-            smtp.starttls()
-            smtp.ehlo()
-            smtp.login(SENDER_EMAIL, SENDER_PASSWORD)
-            smtp.send_message(msg)
+        sg = SendGridAPIClient(api_key)
+        response = sg.send(message)
+        print(f"[SENDGRID] Status: {response.status_code}")
 
-        return jsonify({"success": True, "message": f"Password sent to {ADMIN_EMAIL}"})
+        if response.status_code in (200, 202):
+            return jsonify({"success": True, "message": f"Password sent to {ADMIN_EMAIL}"})
+        else:
+            return jsonify({"success": False, "message": f"SendGrid status: {response.status_code}"})
 
-    except smtplib.SMTPAuthenticationError as e:
-        print(f"[SMTP AUTH ERROR] {e}")
-        return jsonify({"success": False, "message": f"AUTH_ERROR: {str(e)}"})
-    except smtplib.SMTPException as e:
-        print(f"[SMTP ERROR] {e}")
-        return jsonify({"success": False, "message": f"SMTP_ERROR: {str(e)}"})
-    except OSError as e:
-        print(f"[NETWORK ERROR] {e}")
-        return jsonify({"success": False, "message": f"NETWORK_ERROR: {str(e)}"})
     except Exception as e:
-        import traceback
-        print(f"[UNEXPECTED ERROR] {traceback.format_exc()}")
-        return jsonify({"success": False, "message": f"ERROR: {str(e)}"})
+        err = str(e)
+        print(f"[SENDGRID ERROR] {err}")
+        if "401" in err:
+            return jsonify({"success": False, "message": "401: Wrong API Key — check SENDGRID_API_KEY in Render"})
+        if "403" in err:
+            return jsonify({"success": False, "message": "403: Sender not verified — go to app.sendgrid.com → Sender Authentication → verify vinaypydi6@gmail.com"})
+        return jsonify({"success": False, "message": f"Email error: {err}"})
 
 
-# ==========================================
-# RUN
-# ==========================================
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
