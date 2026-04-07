@@ -468,6 +468,16 @@
   // ===================================================
   // TOAST
   // ===================================================
+   function downloadReport() {
+    const date = document.getElementById("reportDate").value;
+
+    if (!date) {
+      showToast("Select a date first!", "error");
+      return;
+    }
+
+    window.open(API + "/download_report?date=" + date, "_blank");
+  }
   function showToast(msg, type="success") {
     const t = document.getElementById("toast");
     t.textContent = msg;
