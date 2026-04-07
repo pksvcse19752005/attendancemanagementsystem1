@@ -208,7 +208,37 @@ def attendance_report():
     records = cur.fetchall()
     conn.close()
     return jsonify({"success": True, "report": [{"rollno": r["rollno"], "name": r["name"], "section": r["section"], "status": r["status"]} for r in records]})
+@app.route("/download_report", methods=["POST"])
+def download_report():
+    att_date = request.json.get("date", date.today().isoformat())
 
+    conn = connect_db()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT s.rollno, s.name, s.section, COALESCE(a.status, 'Not Marked') as status
+        FROM students s
+        LEFT JOIN attendance a ON s.rollno = a.rollno AND a.date = ?
+        ORDER BY s.section, s.rollno
+    """, (att_date,))
+    records = cur.fetchall()
+    conn.close()
+
+    # Create CSV
+    def generate():
+        data = [["Roll No", "Name", "Section", "Status"]]
+        for r in records:
+            data.append([r["rollno"], r["name"], r["section"], r["status"]])
+
+        for row in data:
+            yield ",".join(row) + "\n"
+
+    return Response(
+        generate(),
+        mimetype="text/csv",
+        headers={
+            "Content-Disposition": f"attachment; filename=attendance_{att_date}.csv"
+        }
+    )
 
 # ==========================================
 # FORGOT PASSWORD — SendGrid
