@@ -210,12 +210,43 @@ def attendance_report():
     records = cur.fetchall()
     conn.close()
     return jsonify({"success": True, "report": [{"rollno": r["rollno"], "name": r["name"], "section": r["section"], "status": r["status"]} for r in records]})
+from flask import Response
+
 @app.route('/download_report', methods=['GET'])
 def download_report():
-    date = request.args.get('date')
-    
-    if not date:
+    att_date = request.args.get('date')
+
+    if not att_date:
         return {"success": False, "message": "Date is required"}, 400
+
+    conn = connect_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT s.rollno, s.name, s.section, 
+        COALESCE(a.status, 'Not Marked') as status
+        FROM students s
+        LEFT JOIN attendance a 
+        ON s.rollno = a.rollno AND a.date = ?
+        ORDER BY s.section, s.rollno
+    """, (att_date,))
+
+    records = cur.fetchall()
+    conn.close()
+
+    # CSV generator
+    def generate():
+        yield "Roll No,Name,Section,Status\n"
+        for r in records:
+            yield f"{r['rollno']},{r['name']},{r['section']},{r['status']}\n"
+
+    return Response(
+        generate(),
+        mimetype="text/csv",
+        headers={
+            "Content-Disposition": f"attachment; filename=attendance_{att_date}.csv"
+        }
+    )
     conn = connect_db()
     cur = conn.cursor()
     cur.execute("""
